@@ -3,10 +3,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import PhotoStack from './PhotoStack';
 
 const PhotoSorter = ({ photos, handState }) => {
-    const [queue, setQueue] = useState(photos);
+    // Start with a small empty state or initial prop, then shuffle on mount
+    const [queue, setQueue] = useState([]);
     const [bruzoCount, setBruzoCount] = useState(0);
     const [jimmyCount, setJimmyCount] = useState(0);
     const [deletedCount, setDeletedCount] = useState(0);
+
+    // Fisher-Yates Shuffle on Mount
+    useEffect(() => {
+        const shuffled = [...photos];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        setQueue(shuffled);
+    }, [photos]);
 
     // Current active photo is always index 0 of queue
     const currentPhoto = queue[0];

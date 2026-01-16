@@ -1,16 +1,68 @@
-# React + Vite
+# Photonic XR 🐾
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An experimental, gesture-controlled photo sorting application designed for immersive WebXR environments (like the Meta Quest) using natural hand movements in 2D space.
 
-Currently, two official plugins are available:
+![Photonic XR Interface](https://via.placeholder.com/800x450.png?text=Photonic+XR+Interface)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🌟 The Experience
 
-## React Compiler
+Photonic XR transforms the mundane task of sorting digital photos into a tactile, physical experience. Using just your hands via a webcam (MediaPipe), you can grab, sort, and delete your memories with natural gestures.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Grab & Sort**: Pinch a photo to pick it up. Drag it Left for **Bruzo** (Black Dog) or Right for **Jimmy** (Brown Dog).
+- **Tactile Feedback**: Photos shrink and "pop" as you interact with them, accompanied by satisfying sound effects.
+- **Gesture Delete**: Not sure about a photo? Close your hand into a **Fist** to incinerate it.
 
-## Expanding the ESLint configuration
+## 🛠️ Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **Framework**: React + Vite
+- **Animations**: Framer Motion (State-machine driven physics)
+- **Tracking**: @mediapipe/tasks-vision (Hand Landmarker)
+- **Styling**: Tailwind CSS
+- **Deployment**: Vercel
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js (v18+)
+- A webcam (if running on desktop) or a Meta Quest headset.
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/SpaceMan619/Photonic-XR.git
+   cd Photonic-XR
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Open `http://localhost:5173` in your browser.
+
+## 👐 Interaction Guide
+
+| Action | Gesture |
+| :--- | :--- |
+| **Cursor Movement** | Move your index finger |
+| **Grab/Drag** | Pinch (Thumb + Index finger) |
+| **Sort** | Drag to far Left or Right while pinching |
+| **Delete** | Hold a Fist (3+ fingers closed) for 1.2 seconds |
+
+## 📁 Project Structure
+
+- `/src/components`: Core UI components including the state-machine driven `PhotoStack`.
+- `/src/utils`: Utility helpers like the `SoundManager`.
+- `/public/models`: Pre-trained MediaPipe hand landmark models.
+- `/public/photos`: The asset library for sorting.
+
+## 📜 Credits
+
+Created by **SpaceMan619**. Inspired by the future of natural human-computer interaction.
