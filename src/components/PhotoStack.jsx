@@ -87,7 +87,7 @@ const PhotoStack = ({ photo, nextPhoto, handState, onSortLeft, onSortRight, onDe
                     if (Math.abs(currentX) > THRESHOLD) {
                         // START SORT ANIMATION
                         setStatus(STATUS.SORTING);
-                        soundManager.play(SOUND_KEYS.SORT);
+                        soundManager.play(SOUND_KEYS.DROP); // Play "Drop" sound on release
 
                         // Final callback after animation
                         setTimeout(() => {
@@ -142,7 +142,7 @@ const PhotoStack = ({ photo, nextPhoto, handState, onSortLeft, onSortRight, onDe
             transition: { duration: 0.35, ease: [0.32, 0, 0.67, 0] }
         },
         [STATUS.SORTING]: {
-            scale: 0, opacity: 0,
+            scale: 0.2, opacity: 0,
             transition: { duration: 0.3 }
         }
     };

@@ -1,8 +1,9 @@
 // Basic Sound Manager for Photonic XR
 const SOUNDS = {
     GRAB: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3', // Pop
-    SORT: 'https://assets.mixkit.co/active_storage/sfx/2040/2040-preview.mp3', // Whoosh/Swipe
-    DELETE: 'https://assets.mixkit.co/active_storage/sfx/2005/2005-preview.mp3', // Thud/Crumple
+    SORT: '', // Silent drag (or remove completely)
+    DELETE: 'https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3', // Soft Typewriter Click
+    DROP: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3', // Short Pop/Click for success
 };
 
 class SoundManager {
@@ -35,5 +36,6 @@ export const soundManager = new SoundManager();
 export const SOUND_KEYS = {
     GRAB: 'GRAB',
     SORT: 'SORT',
-    DELETE: 'DELETE'
+    DELETE: 'DELETE',
+    DROP: 'DROP'
 };

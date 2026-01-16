@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PhotoStack from './PhotoStack';
 
-const PhotoSorter = ({ photos, handState }) => {
+const PhotoSorter = ({ photos, handState, onComplete }) => {
     // Start with a small empty state or initial prop, then shuffle on mount
     const [queue, setQueue] = useState([]);
     const [bruzoCount, setBruzoCount] = useState(0);
@@ -41,21 +41,44 @@ const PhotoSorter = ({ photos, handState }) => {
         setQueue(q => q.slice(1));
     };
 
+    // Trigger completion on Fist
+    useEffect(() => {
+        if (!currentPhoto && onComplete && handState.isFist) {
+            onComplete();
+        }
+    }, [currentPhoto, onComplete, handState.isFist]);
+
     if (!currentPhoto) {
         return (
-            <div className="text-center">
-                <h2 className="text-4xl font-black mb-4">All Sorted!</h2>
-                <div className="flex gap-8 text-xl font-mono">
-                    <div className="text-blue-600">Bruzo: {bruzoCount}</div>
-                    <div className="text-amber-600">Jimmy: {jimmyCount}</div>
-                    <div className="text-red-600">Deleted: {deletedCount}</div>
-                </div>
-                <button
-                    onClick={() => window.location.reload()}
-                    className="mt-8 px-6 py-2 bg-gray-900 text-white rounded-full hover:bg-gray-700"
+            <div className="flex flex-col items-center justify-center w-full h-full text-center relative z-20">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-white/80 backdrop-blur-xl p-12 rounded-3xl shadow-2xl border border-white/50"
                 >
-                    Restart
-                </button>
+                    <h2 className="text-6xl font-black text-gray-900 mb-8 tracking-tighter">ALL SORTED!</h2>
+
+                    <div className="flex gap-12 text-2xl font-mono mb-12">
+                        <div className="flex flex-col items-center">
+                            <span className="text-4xl mb-2">🐾</span>
+                            <span className="text-blue-600 font-bold">{bruzoCount}</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-4xl mb-2">🐕</span>
+                            <span className="text-amber-600 font-bold">{jimmyCount}</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-4xl mb-2">🗑️</span>
+                            <span className="text-red-500 font-bold">{deletedCount}</span>
+                        </div>
+                    </div>
+
+                    <div className="mt-4">
+                        <span className={`inline-block px-8 py-3 rounded-full text-lg font-black tracking-widest transition-all duration-200 transform ${handState.isFist ? 'bg-purple-600 text-white scale-110' : 'bg-gray-100 text-gray-400 scale-100'}`}>
+                            {handState.isFist ? "OPENING MENU..." : "CLENCH FIST TO CONTINUE"}
+                        </span>
+                    </div>
+                </motion.div>
             </div>
         );
     }

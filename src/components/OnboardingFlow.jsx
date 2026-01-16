@@ -35,14 +35,14 @@ const OnboardingFlow = ({ handState, onComplete, onSkip }) => {
             }
         }
 
-        // Stage 2: Identity Step (Wait 3 seconds)
-        if (step === 2) {
+        // Stage 2: Identity Step (Wait for Fist)
+        if (step === 2 && handState.isFist) {
             if (!timeoutRef.current) {
                 timeoutRef.current = setTimeout(() => {
                     setStep(3);
                     setTimeout(onComplete, 1500);
                     timeoutRef.current = null;
-                }, 3500);
+                }, 500);
             }
         }
     }, [step, handState.x, handState.isPinching, onComplete]);
@@ -75,7 +75,7 @@ const OnboardingFlow = ({ handState, onComplete, onSkip }) => {
     );
 
     return (
-        <div className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center text-white backdrop-blur-xl">
+        <div className="fixed inset-0 z-[200] bg-white/90 flex items-center justify-center text-gray-900 backdrop-blur-xl">
             <div className="max-w-2xl w-full p-8 text-center relative h-full flex flex-col justify-center">
                 <AnimatePresence mode="wait">
                     {step === 0 && (
@@ -86,11 +86,11 @@ const OnboardingFlow = ({ handState, onComplete, onSkip }) => {
                             exit={{ opacity: 0, y: -20 }}
                         >
                             <HandIcon />
-                            <h1 className="text-6xl font-black tracking-tighter mb-4">RAISE HAND</h1>
-                            <p className="text-xl text-gray-400 font-medium">Show your hand to activate the cursor.</p>
+                            <h1 className="text-6xl font-black tracking-tighter mb-4 text-gray-900">RAISE HAND</h1>
+                            <p className="text-xl text-gray-500 font-medium">Show your hand to activate the cursor.</p>
 
-                            <div className="mt-8 text-xs font-mono text-gray-600">
-                                Status: {handState.x !== null ? <span className="text-green-400">DETECTED ({handState.x.toFixed(2)})</span> : <span className="text-red-500">NO HAND DETECTED</span>}
+                            <div className="mt-8 text-xs font-mono text-gray-400">
+                                Status: {handState.x !== null ? <span className="text-green-600">DETECTED ({handState.x.toFixed(2)})</span> : <span className="text-red-500">NO HAND DETECTED</span>}
                             </div>
                         </motion.div>
                     )}
@@ -103,11 +103,11 @@ const OnboardingFlow = ({ handState, onComplete, onSkip }) => {
                             exit={{ opacity: 0, scale: 1.2 }}
                         >
                             <PinchIcon />
-                            <h1 className="text-6xl font-black tracking-tighter mb-4 text-yellow-400">PINCH NOW</h1>
-                            <p className="text-2xl text-gray-300">Touch thumb & index finger together to grab.</p>
+                            <h1 className="text-6xl font-black tracking-tighter mb-4 text-yellow-500">PINCH NOW</h1>
+                            <p className="text-2xl text-gray-600">Touch thumb & index finger together to grab.</p>
 
                             <div className="mt-12">
-                                <span className={`inline-block px-8 py-3 rounded-full text-lg font-black tracking-widest transition-all duration-200 transform ${handState.isPinching ? 'bg-green-500 text-black scale-110' : 'bg-gray-800 text-gray-500 scale-100'}`}>
+                                <span className={`inline-block px-8 py-3 rounded-full text-lg font-black tracking-widest transition-all duration-200 transform ${handState.isPinching ? 'bg-green-500 text-white scale-110' : 'bg-gray-200 text-gray-500 scale-100'}`}>
                                     {handState.isPinching ? "GRABBED!" : "WAITING FOR PINCH..."}
                                 </span>
                             </div>
@@ -121,13 +121,19 @@ const OnboardingFlow = ({ handState, onComplete, onSkip }) => {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -30 }}
                         >
-                            <h1 className="text-5xl font-black tracking-tighter mb-8">KNOW YOUR PUPS</h1>
+                            <h1 className="text-5xl font-black tracking-tighter mb-8 text-gray-900">KNOW YOUR PUPS</h1>
                             <DogIdentity />
-                            <div className="bg-gray-800/50 p-6 rounded-2xl border border-white/10">
-                                <p className="text-xl text-gray-300 font-medium">
-                                    Sort <span className="text-blue-400 font-black">Bruzo</span> to the Left<br />
-                                    Sort <span className="text-amber-400 font-black">Jimmy</span> to the Right
+                            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xl mb-8">
+                                <p className="text-xl text-gray-600 font-medium">
+                                    Sort <span className="text-blue-500 font-black">Bruzo</span> to the Left<br />
+                                    Sort <span className="text-amber-500 font-black">Jimmy</span> to the Right
                                 </p>
+                            </div>
+
+                            <div className="mt-4">
+                                <span className={`inline-block px-8 py-3 rounded-full text-lg font-black tracking-widest transition-all duration-200 transform ${handState.isFist ? 'bg-purple-600 text-white scale-110' : 'bg-gray-200 text-gray-500 scale-100'}`}>
+                                    {handState.isFist ? "READY!" : "CLENCH FIST TO START"}
+                                </span>
                             </div>
                         </motion.div>
                     )}
@@ -139,7 +145,7 @@ const OnboardingFlow = ({ handState, onComplete, onSkip }) => {
                             animate={{ opacity: 1 }}
                         >
                             <div className="text-8xl mb-6">🚀</div>
-                            <h1 className="text-5xl font-black text-white mb-2">
+                            <h1 className="text-5xl font-black text-gray-900 mb-2">
                                 All Systems Go
                             </h1>
                         </motion.div>
@@ -150,7 +156,7 @@ const OnboardingFlow = ({ handState, onComplete, onSkip }) => {
                 <div className="absolute bottom-10 left-0 right-0">
                     <button
                         onClick={onSkip}
-                        className="text-sm text-gray-600 hover:text-white underline uppercase tracking-widest"
+                        className="text-sm text-gray-400 hover:text-gray-900 underline uppercase tracking-widest"
                     >
                         Skip Tutorial
                     </button>
