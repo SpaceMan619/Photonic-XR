@@ -23,8 +23,8 @@ const PHOTOS = [
     { url: '/photos/photo_17.webp', title: '', photographer: '' },
     { url: '/photos/photo_18.webp', title: '', photographer: '' },
     { url: '/photos/photo_19.webp', title: '', photographer: '' },
-    { url: '/photos/photo_20.jpg', title: '', photographer: '' },
-    { url: '/photos/photo_21.jpg', title: '', photographer: '' },
+    { url: '/photos/photo_20.webp', title: '', photographer: '' },
+    { url: '/photos/photo_21.webp', title: '', photographer: '' },
 ];
 
 const PhotoSorterDemo = ({ handState, onExit }) => {

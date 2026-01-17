@@ -156,7 +156,7 @@ const PhotoStack = ({ photo, nextPhoto, handState, onSortLeft, onSortRight, onDe
             {/* Background Card */}
             {nextPhoto && (
                 <div className="absolute inset-0 bg-gray-200 rounded-3xl transform scale-95 translate-y-4 opacity-100 border-4 border-white shadow-xl overflow-hidden pointer-events-none">
-                    <img src={nextPhoto.url} alt="Next" className="w-full h-full object-cover opacity-50 grayscale" />
+                    <img src={nextPhoto.url} alt="Next" className="w-full h-full object-cover opacity-50 grayscale" loading="eager" />
                 </div>
             )}
 
@@ -176,7 +176,15 @@ const PhotoStack = ({ photo, nextPhoto, handState, onSortLeft, onSortRight, onDe
                     ${status === STATUS.PRE_DELETE ? 'border-red-400' : ''}
                 `}
             >
-                <img src={photo.url} alt="Active" className="w-full h-full object-cover pointer-events-none select-none" draggable="false" />
+                <img
+                    src={photo.url}
+                    alt="Active"
+                    className="w-full h-full object-cover pointer-events-none select-none"
+                    draggable="false"
+                    fetchpriority="high"
+                    decoding="sync"
+                    loading="eager"
+                />
 
                 {status === STATUS.PRE_DELETE && (
                     <div className="absolute inset-0 flex items-center justify-center bg-red-500/20 backdrop-blur-[2px]">

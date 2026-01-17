@@ -9,7 +9,7 @@ const PhotoSorter = ({ photos, handState, onComplete }) => {
     const [jimmyCount, setJimmyCount] = useState(0);
     const [deletedCount, setDeletedCount] = useState(0);
 
-    // Fisher-Yates Shuffle on Mount
+    // Fisher-Yates Shuffle and Initial Preload
     useEffect(() => {
         const shuffled = [...photos];
         for (let i = shuffled.length - 1; i > 0; i--) {
@@ -17,7 +17,24 @@ const PhotoSorter = ({ photos, handState, onComplete }) => {
             [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
         setQueue(shuffled);
+
+        // Warm up the cache with the first 3
+        shuffled.slice(0, 3).forEach(photo => {
+            const img = new Image();
+            img.src = photo.url;
+        });
     }, [photos]);
+
+    // Preload next 3 images whenever the queue changes
+    useEffect(() => {
+        if (queue.length > 1) {
+            // Look ahead 3 photos (skip index 0 which is current)
+            queue.slice(1, 4).forEach(photo => {
+                const img = new Image();
+                img.src = photo.url;
+            });
+        }
+    }, [queue]);
 
     // Current active photo is always index 0 of queue
     const currentPhoto = queue[0];
