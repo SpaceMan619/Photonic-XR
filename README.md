@@ -2,6 +2,8 @@
 
 An experimental, gesture-controlled photo sorting application designed for immersive WebXR environments (like the Meta Quest) using natural hand movements in 2D space.
 
+> **🔒 Privacy Note**: Camera access is used **entirely locally** within your browser to calculate hand palm positions via AI (MediaPipe). No video data is ever recorded, stored, or transmitted to any server.
+
 ![Photonic XR Interface](https://via.placeholder.com/800x450.png?text=Photonic+XR+Interface)
 
 ## 🌟 The Experience
@@ -19,6 +21,16 @@ Photonic XR transforms the mundane task of sorting digital photos into a tactile
 - **Tracking**: @mediapipe/tasks-vision (Hand Landmarker)
 - **Styling**: Tailwind CSS
 - **Deployment**: Vercel
+
+## 💻 Minimum System Requirements
+
+To ensure a smooth experience with real-time hand tracking:
+- **Processor**: Intel i5 or equivalent (MediaPipe requires decent single-core performance).
+- **Memory**: 8GB RAM.
+- **GPU**: Integrated graphics are sufficient, but dedicated hardware reduces tracking latency.
+- **Webcam**: 720p @ 30fps (Good lighting is essential for accurate gesture detection).
+- **Browser**: Chrome, Edge, or Brave (Works best on Chromium-based browsers).
+- **OS**: macOS, Windows, or Meta Quest (v50+).
 
 ## 🚀 Getting Started
 

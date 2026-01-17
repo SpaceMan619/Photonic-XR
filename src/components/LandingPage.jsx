@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { soundManager, SOUND_KEYS } from '../utils/SoundManager';
 
 const LandingPage = ({ onStart }) => {
     return (
@@ -25,7 +26,10 @@ const LandingPage = ({ onStart }) => {
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={onStart}
+                    onClick={() => {
+                        soundManager.play(SOUND_KEYS.DROP); // Use DROP for a click sound
+                        onStart();
+                    }}
                     className="group relative px-8 py-4 bg-black text-white text-lg font-bold rounded-full overflow-hidden shadow-xl transition-shadow hover:shadow-2xl"
                 >
                     <span className="relative z-10 flex items-center gap-2">

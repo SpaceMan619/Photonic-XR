@@ -41,12 +41,13 @@ const PhotoSorter = ({ photos, handState, onComplete }) => {
         setQueue(q => q.slice(1));
     };
 
-    // Trigger completion on Fist
+    // Trigger completion on Fist - added check for totalSorted to prevent skip on mount
+    const totalSorted = bruzoCount + jimmyCount + deletedCount;
     useEffect(() => {
-        if (!currentPhoto && onComplete && handState.isFist) {
+        if (!currentPhoto && totalSorted > 0 && onComplete && handState.isFist) {
             onComplete();
         }
-    }, [currentPhoto, onComplete, handState.isFist]);
+    }, [currentPhoto, totalSorted, onComplete, handState.isFist]);
 
     if (!currentPhoto) {
         return (

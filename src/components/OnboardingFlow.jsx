@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { soundManager, SOUND_KEYS } from '../utils/SoundManager';
 
 const OnboardingFlow = ({ handState, onComplete, onSkip }) => {
     const [step, setStep] = useState(0);
@@ -30,6 +31,7 @@ const OnboardingFlow = ({ handState, onComplete, onSkip }) => {
             if (!timeoutRef.current) {
                 timeoutRef.current = setTimeout(() => {
                     setStep(2);
+                    soundManager.play(SOUND_KEYS.GRAB);
                     timeoutRef.current = null;
                 }, 500);
             }
@@ -38,6 +40,7 @@ const OnboardingFlow = ({ handState, onComplete, onSkip }) => {
         // Stage 2: Identity Step (Wait for Fist)
         if (step === 2 && handState.isFist) {
             if (!timeoutRef.current) {
+                soundManager.play(SOUND_KEYS.DELETE); // Trigger sound immediately
                 timeoutRef.current = setTimeout(() => {
                     setStep(3);
                     setTimeout(onComplete, 1500);
@@ -155,7 +158,10 @@ const OnboardingFlow = ({ handState, onComplete, onSkip }) => {
                 {/* SKIP BUTTON */}
                 <div className="absolute bottom-10 left-0 right-0">
                     <button
-                        onClick={onSkip}
+                        onClick={() => {
+                            soundManager.play(SOUND_KEYS.DROP);
+                            onSkip();
+                        }}
                         className="text-sm text-gray-400 hover:text-gray-900 underline uppercase tracking-widest"
                     >
                         Skip Tutorial

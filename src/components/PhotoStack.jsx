@@ -99,7 +99,7 @@ const PhotoStack = ({ photo, nextPhoto, handState, onSortLeft, onSortRight, onDe
                         setStatus(STATUS.IDLE);
                     }
                 }
-                // UPDATE POSITION
+                // UPDATE POSITION - Restored snappiness
                 else {
                     const deltaX = (handState.x - dragStartRef.current.x) * window.innerWidth * 1.5;
                     const deltaY = (handState.y - dragStartRef.current.y) * window.innerHeight * 1.5;
@@ -121,7 +121,7 @@ const PhotoStack = ({ photo, nextPhoto, handState, onSortLeft, onSortRight, onDe
     const variants = {
         [STATUS.IDLE]: {
             x: 0, y: 0, rotate: 0, scale: 1, filter: "none", opacity: 1,
-            transition: { type: "spring", stiffness: 500, damping: 25, mass: 0.5 }
+            transition: { type: "spring", stiffness: 500, damping: 25, mass: 0.5 } // Restored snappy physics
         },
         [STATUS.DRAGGING]: {
             scale: 1.1,
@@ -139,15 +139,15 @@ const PhotoStack = ({ photo, nextPhoto, handState, onSortLeft, onSortRight, onDe
         },
         [STATUS.DELETING]: {
             scale: 0, opacity: 0, rotate: 180, filter: "grayscale(100%) brightness(0.5)",
-            transition: { duration: 0.35, ease: [0.32, 0, 0.67, 0] }
+            transition: { duration: 0.35, ease: "easeIn" }
         },
         [STATUS.SORTING]: {
-            scale: 0.2, opacity: 0,
-            transition: { duration: 0.3 }
+            scale: 0.1, opacity: 0,
+            transition: { duration: 0.25, ease: "easeIn" }
         }
     };
 
-    // Dynamic Scale for Drag Feedback
+    // Dynamic Scale for Drag Feedback - Restored more aggressive scaling for "light" feel
     const dragScale = useTransform(x, [-400, 0, 400], [0.6, 1.1, 0.6]);
 
     return (
@@ -164,7 +164,12 @@ const PhotoStack = ({ photo, nextPhoto, handState, onSortLeft, onSortRight, onDe
             <motion.div
                 variants={variants}
                 animate={status}
-                style={status === STATUS.DRAGGING ? { x, y, rotate, scale: dragScale } : {}}
+                style={{
+                    x: (status === STATUS.DRAGGING || status === STATUS.SORTING) ? x : 0,
+                    y: (status === STATUS.DRAGGING || status === STATUS.SORTING) ? y : 0,
+                    rotate: (status === STATUS.DRAGGING || status === STATUS.SORTING) ? rotate : 0,
+                    scale: status === STATUS.DRAGGING ? dragScale : undefined
+                }}
                 initial="idle"
                 className={`absolute inset-0 bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-white 
                     ${status === STATUS.DRAGGING ? 'z-50 shadow-[0_20px_50px_rgba(0,0,0,0.3)]' : ''}

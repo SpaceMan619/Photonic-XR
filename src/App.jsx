@@ -108,6 +108,7 @@ function App() {
           {/* 2. ACTIVE DEMO: PHOTO SORTER */}
           {activeDemo === 'sorter' && (
             <PhotoSorterDemo
+              key="sorter-demo"
               handState={handState}
               onExit={() => setActiveDemo(null)}
             />

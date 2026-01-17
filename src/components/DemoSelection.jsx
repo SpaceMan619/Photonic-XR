@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { soundManager, SOUND_KEYS } from '../utils/SoundManager';
 
 const DemoSelection = ({ onSelectDemo }) => {
 
@@ -34,7 +35,12 @@ const DemoSelection = ({ onSelectDemo }) => {
                             transition={{ delay: index * 0.1 }}
                             whileHover={demo.status === 'ready' ? { scale: 1.05, y: -5 } : {}}
                             whileTap={demo.status === 'ready' ? { scale: 0.95 } : {}}
-                            onClick={() => demo.status === 'ready' && onSelectDemo(demo.id)}
+                            onClick={() => {
+                                if (demo.status === 'ready') {
+                                    soundManager.play(SOUND_KEYS.DROP);
+                                    onSelectDemo(demo.id);
+                                }
+                            }}
                             className={`
                                 relative p-8 rounded-2xl border flex flex-col items-center gap-4 transition-all
                                 ${demo.status === 'ready'
