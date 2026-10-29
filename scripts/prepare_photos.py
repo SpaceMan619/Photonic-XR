@@ -10,6 +10,9 @@ Depth Pro (Apple) gives real distances in metres and the camera's field of view,
 browser can put every pixel back on its true line of sight instead of just pushing the
 photo out by a fixed amount.
 
+Finally scripts/photo_layers.py splits each photo into a cut-out subject and a filled-in
+background, so the 3D view can look around people.
+
 Run: python3 scripts/prepare_photos.py                 (your photos, public/local)
      python3 scripts/prepare_photos.py --set demo      (the dog photos, public/demo)
 """
@@ -37,7 +40,7 @@ CATEGORIES = {
 device = 'mps' if torch.backends.mps.is_available() else 'cpu'
 CACHE = os.path.expanduser('~/.cache/photonic-depth')
 os.makedirs(CACHE, exist_ok=True)
-for d in ['photos', 'depth']:
+for d in ['photos', 'depth', 'depth16']:
     os.makedirs(os.path.join(ROOT, d), exist_ok=True)
 
 paths = sorted(glob.glob(os.path.join(SRC, '*.jpg')) + glob.glob(os.path.join(SRC, '*.webp')))
@@ -91,6 +94,10 @@ for i, img in enumerate(images):
     near = max(0.05, float(np.percentile(depth, 0.5)) * 0.95)
     far = max(near * 1.5, min(float(np.percentile(depth, 99.5)), focus * 6))
     Image.fromarray(encode(depth, near, far)).save(os.path.join(ROOT, 'depth', pid + '.png'))
+    # Full-precision copy for photo_layers.py: 8 bits leaves faces only ~16 depth steps,
+    # which show up as contour lines when you look at them from the side.
+    t = (np.log(np.clip(depth, near, far)) - np.log(near)) / (np.log(far) - np.log(near))
+    Image.fromarray(((1 - t) * 65535).round().astype(np.uint16)).save(os.path.join(ROOT, 'depth16', pid + '.png'))
 
     item = {'near': round(near, 4), 'far': round(far, 4), 'focus': round(focus, 4), 'fov': round(fov, 2)}
     meta.append(item)
@@ -144,3 +151,11 @@ for it, p in zip(items, xyz):
 json.dump({'categories': list(CATEGORIES), 'photos': items},
           open(os.path.join(ROOT, 'manifest.json'), 'w'), indent=1)
 print('wrote', len(items), 'photos')
+
+# ---- pass 3: front/back layers (Apple Vision cut-out + LaMa fill), see photo_layers.py ----
+import subprocess, sys
+lama_py = os.path.expanduser('~/.cache/photonic-lama/venv/bin/python')
+if os.path.exists(lama_py):
+    subprocess.run([lama_py, os.path.join(os.path.dirname(__file__), 'photo_layers.py'), '--set', SET], check=True)
+else:
+    print('skipped layers: LaMa not set up (see scripts/photo_layers.py)')

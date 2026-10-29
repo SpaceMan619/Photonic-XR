@@ -66,10 +66,11 @@ export class GalaxyDemo {
         }, undefined, () => res(null)));
 
         await Promise.all(m.photos.map(async (p, i) => {
-            const [map, depth] = await Promise.all([load(p.src, true), load(p.depth, false)]);
+            const [map, depth, bg, depthLo] = await Promise.all([
+                load(p.src, true), load(p.depth, false), p.bg ? load(p.bg, true) : null, p.depthLo ? load(p.depthLo, false) : null]);
             if (!map) return;
             const glow = PALETTE[m.categories.indexOf(p.category) % PALETTE.length];
-            const mat = makePhotoMaterial({ map, depth, meta: p.depthMeta, glow });
+            const mat = makePhotoMaterial({ map, bg, depth, depthLo, meta: p.depthMeta, glow, layers: !!(p.layers && bg) });
             const mesh = new THREE.Mesh(PHOTO_GEO_LO, mat);
             const mats = [mat];
             const g = new THREE.Vector3(...p.galaxy);
@@ -261,6 +262,7 @@ export class GalaxyDemo {
                 u.uWarn.value = c.warn;
                 u.uOpacity.value = c.dim;
                 u.uDepthAmt.value = c.depthAmt;
+                u.uSteps.value = c.state === 'focus' ? 160 : 24;
             }
             c.mesh.renderOrder = c.state === 'focus' || c.state === 'held' ? 3 : 1;
             c.mesh.geometry = c.state === 'focus' ? PHOTO_GEO : PHOTO_GEO_LO;
@@ -353,9 +355,11 @@ export class GalaxyDemo {
             const d = this.drag[i];
             if (this.focus) {
                 // Turn the open photo to look around its 3D shape.
+                // Kept to about 20°: one photo only knows so much about the sides of things,
+                // so (like Apple's spatial photos) the view moves a little, never a full turn.
                 this.focus.tilt.set(
-                    clamp(d.tilt.x + (h.x - d.x) * 2.5, -0.7, 0.7),
-                    clamp(d.tilt.y + (h.y - d.y) * 2.0, -0.5, 0.5));
+                    clamp(d.tilt.x + (h.x - d.x) * 1.5, -0.35, 0.35),
+                    clamp(d.tilt.y + (h.y - d.y) * 1.2, -0.25, 0.25));
             } else if (!frame.hands.every((x) => x.pinch && !x.captured)) {
                 this.yawVel += -h.vx * dt * 6;
             }
