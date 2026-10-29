@@ -89,9 +89,12 @@ export class SplatsDemo {
         try {
             const r = await fetch('/local/splats.json');
             const j = JSON.parse(await r.text());
+            const seen = {};
             for (const s of j.splats || []) {
+                const title = s.title || s.id;
+                seen[title] = (seen[title] || 0) + 1;
                 this.scenes.push({
-                    id: `mem-${s.id}`, name: s.title || s.id, kind: s.kind === 'photo' ? 'photo' : 'object',
+                    id: `mem-${s.id}`, name: seen[title] > 1 ? `${title} ${seen[title]}` : title, kind: s.kind === 'photo' ? 'photo' : 'object',
                     file: s.src.split('/').pop(), sources: [s.src], rotation: s.rotation,
                     line: 'one of your memories · local only', local: true, lod: false,
                 });
