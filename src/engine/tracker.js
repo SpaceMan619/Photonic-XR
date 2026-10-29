@@ -1,7 +1,4 @@
-import { FilesetResolver, HandLandmarker, FaceLandmarker } from '@mediapipe/tasks-vision';
 import { OneEuro, OneEuro3, clamp, remap } from './filters';
-
-const WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm';
 
 // Landmark indices (MediaPipe hand model)
 const WRIST = 0, THUMB_IP = 3, THUMB_TIP = 4, INDEX_MCP = 5, MIDDLE_MCP = 9, PINKY_MCP = 17;
@@ -56,7 +53,7 @@ export class Tracker {
         this.hands = [makeHand(0), makeHand(1)];
         this.head = { x: 0, y: 0, d: 1, present: false };
         this.video = null;
-        this.stats = { fps: 0 };
+        this.stats = { fps: 0, handMs: 0, faceMs: 0 };
         this._headF = new OneEuro3(0.9, 0.6);
         this._frame = 0;
         this._fpsCount = 0;
@@ -68,24 +65,6 @@ export class Tracker {
 
     // ---------- Camera mode ----------
     async startCamera() {
-        const vision = await FilesetResolver.forVisionTasks(WASM);
-        const [hands, face] = await Promise.all([
-            HandLandmarker.createFromOptions(vision, {
-                baseOptions: { modelAssetPath: '/models/hand_landmarker.task', delegate: 'GPU' },
-                runningMode: 'VIDEO',
-                numHands: 2,
-                minHandDetectionConfidence: 0.6,
-                minTrackingConfidence: 0.5,
-            }),
-            FaceLandmarker.createFromOptions(vision, {
-                baseOptions: { modelAssetPath: '/models/face_landmarker.task', delegate: 'GPU' },
-                runningMode: 'VIDEO',
-                numFaces: 1,
-            }),
-        ]);
-        this.handLm = hands;
-        this.faceLm = face;
-
         // 640x480 is plenty for landmarks and keeps the Air cool.
         const stream = await navigator.mediaDevices.getUserMedia({
             video: { width: 640, height: 480, facingMode: 'user' },
@@ -96,42 +75,62 @@ export class Tracker {
         video.playsInline = true;
         await video.play();
         this.video = video;
+
+        // The AI models run in a worker so rendering never waits on them.
+        const worker = (this.worker = new Worker(new URL('./trackWorker.js', import.meta.url), { type: 'module' }));
+        await new Promise((resolve, reject) => {
+            worker.onmessage = (e) => {
+                if (e.data.type === 'ready') resolve();
+                else if (e.data.type === 'error') reject(new Error(e.data.message));
+            };
+            worker.onerror = (e) => reject(new Error(e.message));
+            worker.postMessage({ type: 'init', origin: location.origin });
+        });
+        worker.onmessage = (e) => this._onResult(e.data);
+
         this.mode = 'camera';
         this._running = true;
-
+        this._busy = false;
         const loop = () => {
             if (!this._running) return;
-            this._detect();
+            this._sendFrame();
             video.requestVideoFrameCallback(loop);
         };
         video.requestVideoFrameCallback(loop);
     }
 
-    _detect() {
+    async _sendFrame() {
         const video = this.video;
-        if (!video.videoWidth) return;
-        // Skip work when the tab is hidden: no point heating the laptop.
-        if (document.hidden) return;
-        const tMs = performance.now();
-        const t = tMs / 1000;
-        const aspect = video.videoWidth / video.videoHeight;
-
-        const res = this.handLm.detectForVideo(video, tMs);
-        this._updateHands(res.landmarks || [], t, aspect);
-
-        // Face tracking at half rate: the head moves slowly, the filter fills the gaps.
-        if (this._frame++ % 2 === 0) {
-            const fr = this.faceLm.detectForVideo(video, tMs + 0.5);
-            this._updateHead(fr.faceLandmarks?.[0], t, aspect);
+        // One frame in flight at a time; if the worker is still busy we skip this camera frame.
+        if (this._busy || !video.videoWidth || document.hidden) return;
+        this._busy = true;
+        try {
+            const bitmap = await createImageBitmap(video);
+            const doFace = this._frame++ % 3 === 0; // the head moves slowly, the filter fills the gaps
+            this.worker.postMessage({ type: 'frame', bitmap, t: performance.now(), doFace }, [bitmap]);
+        } catch {
+            this._busy = false;
         }
+    }
 
+    _onResult(r) {
+        if (r.type !== 'result') return;
+        this._busy = false;
+        const t = performance.now() / 1000;
+        const aspect = this.video.videoWidth / this.video.videoHeight;
+        this._updateHands(r.hands, t, aspect);
+        if (r.doFace) this._updateHead(r.iris, t, aspect);
+        this.lastResult = r;
+
+        this.stats.handMs += (r.handMs - this.stats.handMs) * 0.1;
+        if (r.doFace) this.stats.faceMs += (r.faceMs - this.stats.faceMs) * 0.2;
         this._fpsCount++;
-        if (tMs - this._fpsT > 1000) {
+        const now = performance.now();
+        if (now - this._fpsT > 1000) {
             this.stats.fps = this._fpsCount;
             this._fpsCount = 0;
-            this._fpsT = tMs;
+            this._fpsT = now;
         }
-        this.lastResult = res;
     }
 
     _updateHands(list, t, aspect) {
@@ -235,12 +234,12 @@ export class Tracker {
         h.lastSeen = t;
     }
 
-    _updateHead(lm, t, aspect) {
-        if (!lm || lm.length < 474) {
+    _updateHead(iris, t, aspect) {
+        if (!iris) {
             this.head.present = false;
             return;
         }
-        const a = lm[468], b = lm[473]; // iris centres
+        const [a, b] = iris; // iris centres
         const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
         const eyes = Math.hypot(a.x - b.x, (a.y - b.y) / aspect);
         // ~0.09 of frame width is a typical eye gap at ~55 cm on a laptop webcam.
@@ -318,8 +317,7 @@ export class Tracker {
     stop() {
         this._running = false;
         this.video?.srcObject?.getTracks().forEach((tr) => tr.stop());
-        this.handLm?.close();
-        this.faceLm?.close();
+        this.worker?.terminate();
         this._off?.forEach((f) => f());
         clearInterval(this._mouseDecay);
     }

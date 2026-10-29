@@ -44,7 +44,9 @@ export default function Debug({ engine }) {
             ctx.fill();
             text.current.textContent = tr.hands.map((h) => h.present
                 ? `#${h.slot} x${h.x.toFixed(2)} y${h.y.toFixed(2)} z${h.z.toFixed(2)} pinch:${h.pinch ? 1 : 0}(${h.pinchStrength.toFixed(2)}) fist:${h.fist ? 1 : 0} fingers:${h.fingers}`
-                : `#${h.slot} —`).join('\n') + `\nhead x${hd.x.toFixed(2)} y${hd.y.toFixed(2)} d${hd.d.toFixed(2)} · ${tr.stats.fps} fps`;
+                : `#${h.slot} —`).join('\n') + `\nhead x${hd.x.toFixed(2)} y${hd.y.toFixed(2)} d${hd.d.toFixed(2)} · track ${tr.stats.fps} fps`
+                + `\nhand ${tr.stats.handMs.toFixed(1)}ms · face ${tr.stats.faceMs.toFixed(1)}ms`
+                + (engine.current.stage.perf ? `\nrender ${engine.current.stage.perf.fps} fps · cpu ${engine.current.stage.perf.cpuMs.toFixed(1)}ms · worst gap ${(engine.current.stage.perf.worstShown || 0).toFixed(0)}ms` : '');
         };
         draw();
         return () => cancelAnimationFrame(raf);

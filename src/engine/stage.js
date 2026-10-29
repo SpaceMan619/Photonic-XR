@@ -1,8 +1,4 @@
 import * as THREE from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { ui } from './store';
 import { audio } from './audio';
@@ -30,7 +26,8 @@ export class Stage {
         this.cursorProgress = [0, 0];
         this.cursorTint = [null, null];
 
-        const r = (this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' }));
+        // Direct render, no post-processing: a bloom + MSAA composer cost ~20 fps on the Air for a glow the light theme barely shows.
+        const r = (this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }));
         // Pixel ratio cap: the biggest single lever for keeping a fanless laptop cool.
         r.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         r.setClearColor(THEME.bg, 1);
@@ -46,12 +43,6 @@ export class Stage {
         Object.assign(this.labels.domElement.style, { position: 'absolute', inset: '0', pointerEvents: 'none' });
         container.appendChild(this.labels.domElement);
 
-        const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 });
-        this.composer = new EffectComposer(r, rt);
-        this.composer.addPass(new RenderPass(this.scene, this.camera));
-        this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.45, 0.7, 1.0);
-        this.composer.addPass(this.bloom);
-        this.composer.addPass(new OutputPass());
 
         this.roomGroup = new THREE.Group();
         this.scene.add(this.roomGroup);
@@ -84,9 +75,6 @@ export class Stage {
         if (!w || !h) return;
         this.aspect = w / h;
         this.renderer.setSize(w, h);
-        this.composer.setSize(w, h);
-        // Bloom at half resolution: looks the same, costs a quarter.
-        this.bloom.resolution.set(w / 2, h / 2);
         this.labels.setSize(w, h);
         this.buildRoom();
         this.demo?.resize?.();
@@ -183,15 +171,22 @@ export class Stage {
     }
 
     // ---------- frame ----------
-    buildFrame(t) {
+    buildFrame(t, dt) {
         const tr = this.tracker;
+        // Tracking lands ~25 times a second; glide between updates so the cursor moves at 60.
+        this.smooth ??= [{ x: 0.5, y: 0.5, z: 0, on: false }, { x: 0.5, y: 0.5, z: 0, on: false }];
+        const glide = tr.mode === 'camera' ? damp(28, dt) : 1;
         const now = tr.now(); // tracker timestamps use performance.now(), not the render clock
         const hands = tr.hands.map((h, i) => {
             const prev = this.prev[i];
             const present = h.present;
             const pinch = present && h.pinch;
+            const sm = this.smooth[i];
+            if (!present || !sm.on) { sm.x = h.x; sm.y = h.y; sm.z = h.z; }
+            sm.on = present;
+            sm.x += (h.x - sm.x) * glide; sm.y += (h.y - sm.y) * glide; sm.z += (h.z - sm.z) * glide;
             const f = {
-                slot: i, present, x: h.x, y: h.y, z: h.z, vx: h.vx, vy: h.vy, vz: h.vz,
+                slot: i, present, x: sm.x, y: sm.y, z: sm.z, vx: h.vx, vy: h.vy, vz: h.vz,
                 pinch, pinchStrength: h.pinchStrength, fist: present && h.fist,
                 fistTime: present && h.fist ? now - h.fistSince : 0,
                 fingers: h.fingers, landmarks: h.landmarks,
@@ -235,6 +230,12 @@ export class Stage {
 
     loop() {
         this._raf = requestAnimationFrame(this.loop.bind(this));
+        const l0 = performance.now();
+        const perf = (this.perf ??= { fps: 0, frames: 0, t: l0, cpuMs: 0, gap: 0, last: l0, worst: 0 });
+        perf.frames++;
+        perf.worst = Math.max(perf.worst, l0 - perf.last);
+        perf.last = l0;
+        if (l0 - perf.t > 1000) { perf.fps = perf.frames; perf.frames = 0; perf.t = l0; perf.worstShown = perf.worst; perf.worst = 0; }
         const dt = Math.min(0.05, this.clock.getDelta());
         const t = this.clock.elapsedTime;
         const tr = this.tracker;
@@ -252,7 +253,7 @@ export class Stage {
         this.applyOffAxis();
         audio.setListener(this.eye.x, this.eye.y, this.eye.z);
 
-        const frame = this.buildFrame(t);
+        const frame = this.buildFrame(t, dt);
         this.frame = frame;
         this.dust.material.uniforms.uTime.value = t;
         this.sky.material.uniforms.uTime.value = t;
@@ -263,14 +264,16 @@ export class Stage {
         this.demo?.update?.(dt, t, frame);
         this.updateCursors(frame);
 
-        this.composer.render();
+        this.renderer.render(this.scene, this.camera);
         this.labels.render(this.scene, this.camera);
+        perf.cpuMs += (performance.now() - l0 - perf.cpuMs) * 0.1;
 
         if (((this._uiTick = (this._uiTick || 0) + 1) % 15) === 0) {
             ui.set({
                 hands: frame.hands.filter((h) => h.present).length,
                 face: tr.mode === 'camera' && hd.present,
                 fps: tr.stats.fps,
+                renderFps: perf.fps,
             });
         }
     }
