@@ -8,18 +8,18 @@ export default function StartScreen({ onStart }) {
     return (
         <div className="overlay start">
             <div className="start-inner">
-                <div className="eyebrow">Spatial interface experiment · v2</div>
-                <h1 className="title">PHOTONIC</h1>
+                <div className="eyebrow">✦ a spatial daydream</div>
+                <h1 className="title">Photonic</h1>
                 <p className="lede">
-                    Your screen becomes a window. Your hands reach through it.
-                    <br />No headset, just a webcam and some AI running on this laptop.
+                    your screen becomes a window, and your hands reach through it.
+                    <br />no headset, just a webcam and a little AI.
                 </p>
                 <div className="start-actions">
                     <button className="btn primary" disabled={loading} onClick={() => onStart('camera')}>
-                        {loading ? <><span className="spinner" /> Waking up the AI…</> : 'Enable camera'}
+                        {loading ? <><span className="spinner" /> waking the dream…</> : 'Enable camera ↝'}
                     </button>
                     <button className="btn ghost" disabled={loading} onClick={() => onStart('mouse')}>
-                        Use mouse instead
+                        or try it with a mouse
                     </button>
                 </div>
                 {error && <p className="error">{error} You can still try it with the mouse.</p>}

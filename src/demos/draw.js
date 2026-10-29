@@ -24,7 +24,9 @@ export class DrawDemo {
         this.turn = [null, null];
         this.hue = Math.random();
         this.sparks = new Sparks(stage.scene, 1200);
-        this.material = new LineMaterial({ linewidth: 5, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+        this.material = new LineMaterial({ linewidth: 5, vertexColors: true, transparent: true, opacity: 0.95, depthWrite: false });
+        // A wide, faint copy behind each stroke: the soft halo that makes it read as light on a pale sky.
+        this.halo = new LineMaterial({ linewidth: 22, vertexColors: true, transparent: true, opacity: 0.22, depthWrite: false });
         this.tips = [0, 1].map(() => {
             const m = new THREE.Mesh(new THREE.SphereGeometry(0.025, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffffff }));
             m.visible = false;
@@ -42,11 +44,11 @@ export class DrawDemo {
 
     init() {
         this.voice = this.makeVoice();
-        this.stage.setRoomTint('#7a8cff', 0.8);
+        this.stage.setRoomTint('#a58cff', 0.8);
     }
 
     resize() {
-        this.material.resolution.set(this.stage.container.clientWidth, this.stage.container.clientHeight);
+        for (const m of [this.material, this.halo]) m.resolution.set(this.stage.container.clientWidth, this.stage.container.clientHeight);
     }
 
     makeVoice() {
@@ -81,8 +83,8 @@ export class DrawDemo {
             if (!h.present || h.captured) { this.end(i); return; }
             const p = this.penPoint(h);
             tip.position.copy(p);
-            const col = new THREE.Color().setHSL(this.hue, 0.9, 0.6);
-            tip.material.color.copy(col).multiplyScalar(h.pinch ? 3 : 1.2);
+            const col = new THREE.Color().setHSL(this.hue, 0.75, 0.62);
+            tip.material.color.copy(col).multiplyScalar(h.pinch ? 1.3 : 1);
             tip.scale.setScalar(h.pinch ? 1.3 : 0.8 + Math.sin(t * 6) * 0.1);
 
             if (h.fist) {
@@ -166,7 +168,7 @@ export class DrawDemo {
         const speed = a.last ? local.distanceTo(a.last) / Math.max(1e-3, t - a.lastT) : 0;
         a.last = local.clone();
         a.lastT = t;
-        const c = new THREE.Color().setHSL((this.hue + a.main.pts.length / 3000) % 1, 0.95, 0.6).multiplyScalar(1.5);
+        const c = new THREE.Color().setHSL((this.hue + a.main.pts.length / 3000) % 1, 0.75, 0.62).multiplyScalar(1.15);
         this.push(a.main, local, c);
         if (a.mirror) this.push(a.mirror, new THREE.Vector3(-local.x, local.y, local.z), c);
         return speed;
@@ -180,12 +182,13 @@ export class DrawDemo {
         g.setPositions(s.pts);
         g.setColors(s.cols);
         if (!s.line) {
+            s.halo = new Line2(g, this.halo);
             s.line = new Line2(g, this.material);
-            s.line.frustumCulled = false;
-            this.root.add(s.line);
+            s.halo.frustumCulled = s.line.frustumCulled = false;
+            this.root.add(s.halo, s.line);
         } else {
             s.line.geometry.dispose();
-            s.line.geometry = g;
+            s.line.geometry = s.halo.geometry = g;
         }
     }
 
@@ -201,7 +204,7 @@ export class DrawDemo {
     undo() {
         const s = this.strokes.pop();
         if (!s) return;
-        if (s.line) { this.root.remove(s.line); s.line.geometry.dispose(); }
+        if (s.line) { this.root.remove(s.line, s.halo); s.line.geometry.dispose(); }
         audio.tone({ freq: 500, to: 250, type: 'sine', dur: 0.15, gain: 0.08 });
         toast('Undid last stroke');
     }
@@ -213,9 +216,9 @@ export class DrawDemo {
             // Each stroke bursts into sparks along its length.
             for (let k = 0; k < s.pts.length; k += 3 * 12) {
                 const p = this.root.localToWorld(new THREE.Vector3(s.pts[k], s.pts[k + 1], s.pts[k + 2]));
-                this.sparks.emit(p, { count: 3, speed: 0.8, color: new THREE.Color(s.cols[k] / 1.5, s.cols[k + 1] / 1.5, s.cols[k + 2] / 1.5) });
+                this.sparks.emit(p, { count: 3, speed: 0.8, color: new THREE.Color(s.cols[k], s.cols[k + 1], s.cols[k + 2]) });
             }
-            this.root.remove(s.line);
+            this.root.remove(s.line, s.halo);
             s.line.geometry.dispose();
         }
         this.strokes = [];
@@ -229,6 +232,7 @@ export class DrawDemo {
         for (const s of this.strokes) s.line?.geometry.dispose();
         this.stage.scene.remove(this.root, ...this.tips);
         this.material.dispose();
+        this.halo.dispose();
         this.sparks.dispose();
         if (this.voice) {
             const ct = audio.ctx.currentTime;

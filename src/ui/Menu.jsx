@@ -30,14 +30,14 @@ export default function Menu({ onOpen }) {
     return (
         <div className="overlay menu">
             <header className="menu-head">
-                <div className="brand">PHOTONIC</div>
+                <div className="brand">Photonic</div>
                 <StatusPill />
             </header>
-            <h2 className="menu-title">Pick an experience</h2>
+            <h2 className="menu-title">Where to?</h2>
             <p className="menu-sub">
                 {input === 'camera'
-                    ? 'Hover with your hand, then pinch (or push forward) to choose.'
-                    : 'Click a card. In each demo, click = pinch, scroll = depth.'}
+                    ? 'hover with your hand, then pinch (or push forward) to step in'
+                    : 'click to step in. inside, click is a pinch and scroll is depth'}
             </p>
             <div className="cards">
                 {ITEMS.map((it, i) => (
@@ -49,7 +49,7 @@ export default function Menu({ onOpen }) {
                     </button>
                 ))}
             </div>
-            <p className="fine menu-fine">Lean your head left and right. The room behind the glass moves like a real window.</p>
+            <p className="fine menu-fine">lean your head side to side, and the room behind the glass moves like a real window</p>
         </div>
     );
 }

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { THEME } from '../engine/theme';
 
 // A photo that is really a 3D surface: every vertex is pushed toward you by the
 // AI depth map, so faces bulge forward and backgrounds fall back.
@@ -18,6 +19,7 @@ export function makePhotoMaterial(map, depth, glow) {
             uTime: { value: 0 },
             uWarn: { value: 0 },
             uGlow: { value: new THREE.Color(glow) },
+            uFog: { value: new THREE.Color(THEME.bg) },
         },
         vertexShader: /* glsl */`
             uniform sampler2D uDepth; uniform float uDepthAmt; uniform float uTime; uniform float uDissolve;
@@ -42,7 +44,7 @@ export function makePhotoMaterial(map, depth, glow) {
             }`,
         fragmentShader: /* glsl */`
             uniform sampler2D uMap; uniform float uHover; uniform float uDissolve; uniform float uOpacity;
-            uniform float uTime; uniform float uWarn; uniform vec3 uGlow;
+            uniform float uTime; uniform float uWarn; uniform vec3 uGlow; uniform vec3 uFog;
             varying vec2 vUv; varying float vStretch; varying float vWZ;
             float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
             float noise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
@@ -50,20 +52,26 @@ export function makePhotoMaterial(map, depth, glow) {
             void main(){
                 vec3 c = texture2D(uMap, vUv).rgb;
                 float n = noise(vUv*18.0)*0.7 + noise(vUv*60.0)*0.3;
-                if (n < uDissolve * 1.15 - 0.05) discard;
-                float burn = smoothstep(0.08, 0.0, n - (uDissolve*1.15 - 0.05)) * step(0.001, uDissolve);
+                float cut = uDissolve * 1.15 - 0.05;
+                if (n < cut) discard;
+                float burn = smoothstep(0.08, 0.0, n - cut) * step(0.001, uDissolve);
 
-                float edgeDist = min(min(vUv.x, 1.0-vUv.x), min(vUv.y, 1.0-vUv.y));
-                float rim = smoothstep(0.025, 0.0, edgeDist);
-                vec3 glow = mix(uGlow, vec3(1.0,0.25,0.15), uWarn);
+                // A frosted white glass frame with a hairline of soft ink outside it.
+                float e = min(min(vUv.x, 1.0-vUv.x), min(vUv.y, 1.0-vUv.y));
+                float frame = smoothstep(0.022, 0.016, e);
+                float hair = smoothstep(0.004, 0.0, e);
+                vec3 tint = mix(uGlow, vec3(0.84,0.42,0.53), uWarn);
 
-                vec3 col = c * (0.82 + 0.08*uHover);
-                col *= 1.0 - clamp(vStretch - 0.6, 0.0, 0.55);
-                // Distance haze: the far end of the room fades into the dark.
-                col *= mix(0.25, 1.0, smoothstep(-6.0, -0.8, vWZ));
-                col += glow * rim * (0.6 + uHover * 1.3 + uWarn * 2.0);
-                col += glow * uHover * 0.05 * (0.5 + 0.5*sin(vUv.y*260.0 - uTime*6.0));
-                col += vec3(1.6,0.8,2.4) * burn * 3.0;
+                vec3 col = c;
+                col *= 1.0 - clamp(vStretch - 0.6, 0.0, 0.4);
+                // Hover: a slow sheen of light slides across the photo.
+                float sweep = smoothstep(0.08, 0.0, abs(fract((vUv.x + vUv.y) * 0.5 - uTime * 0.25) - 0.5));
+                col = mix(col, vec3(1.0), sweep * uHover * 0.18);
+                col = mix(col, mix(vec3(1.0), tint, 0.35 + uHover * 0.45 + uWarn * 0.5), frame);
+                col = mix(col, vec3(0.33,0.38,0.49), hair * 0.5);
+                // Atmospheric haze: far photos dissolve into the pale sky.
+                col = mix(col, uFog, smoothstep(-1.2, -6.5, vWZ) * 0.75);
+                col = mix(col, vec3(0.95,0.55,0.62), burn);
                 gl_FragColor = vec4(col, uOpacity);
             }`,
     });

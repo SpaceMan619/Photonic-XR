@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { THEME } from './theme';
 
 const BONES = [
     [0, 1], [1, 2], [2, 3], [3, 4],
@@ -20,24 +21,26 @@ export class HandViz {
             const lg = new THREE.BufferGeometry();
             lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(BONES.length * 6), 3));
             const lines = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({
-                color: new THREE.Color(0.3, 1.2, 2.0), transparent: true, opacity: 0.8,
-                blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+                color: new THREE.Color(THEME.sky), transparent: true, opacity: 0.8,
+                depthWrite: false, depthTest: false,
             }));
             const pg = new THREE.BufferGeometry();
             pg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(21 * 3), 3));
             const glow = new Float32Array(21);
             pg.setAttribute('glow', new THREE.BufferAttribute(glow, 1));
             const points = new THREE.Points(pg, new THREE.ShaderMaterial({
-                transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending,
-                uniforms: { uColor: { value: new THREE.Color(0.4, 1.4, 2.4) }, uHot: { value: new THREE.Color(2.6, 0.7, 2.2) } },
+                transparent: true, depthWrite: false, depthTest: false,
+                uniforms: { uColor: { value: new THREE.Color(THEME.sky) }, uHot: { value: new THREE.Color(THEME.rose) } },
                 vertexShader: /* glsl */`
                     attribute float glow; varying float vG;
                     void main(){ vG = glow; vec4 mv = modelViewMatrix*vec4(position,1.0);
-                        gl_Position = projectionMatrix*mv; gl_PointSize = (9.0 + glow*16.0) * (3.0 / -mv.z); }`,
+                        gl_Position = projectionMatrix*mv; gl_PointSize = (11.0 + glow*12.0) * (3.0 / -mv.z); }`,
                 fragmentShader: /* glsl */`
                     uniform vec3 uColor; uniform vec3 uHot; varying float vG;
-                    void main(){ float d = length(gl_PointCoord-0.5); float a = smoothstep(0.5,0.0,d);
-                        a *= a; gl_FragColor = vec4(mix(uColor,uHot,vG)*a, a); }`,
+                    void main(){ float d = length(gl_PointCoord-0.5); float a = smoothstep(0.5,0.3,d);
+                        // pearl: white centre, tinted rim
+                        vec3 c = mix(vec3(1.0), mix(uColor,uHot,vG), smoothstep(0.05,0.45,d));
+                        gl_FragColor = vec4(c, a * 0.95); }`,
             }));
             lines.renderOrder = points.renderOrder = 10;
             lines.frustumCulled = points.frustumCulled = false;
@@ -77,9 +80,7 @@ export class HandViz {
             });
             viz.lines.geometry.attributes.position.needsUpdate = true;
             const c = viz.lines.material.color;
-            if (h.fist) c.setRGB(2.0, 0.8, 0.3);
-            else if (h.pinch) c.setRGB(1.6, 0.9, 2.0);
-            else c.setRGB(0.3, 1.2, 2.0);
+            c.set(h.fist ? THEME.peach : h.pinch ? THEME.rose : THEME.sky);
         });
     }
 }

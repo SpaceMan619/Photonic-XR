@@ -8,6 +8,7 @@ import { ui } from './store';
 import { audio } from './audio';
 import { damp, clamp } from './filters';
 import { HandViz } from './handviz';
+import { THEME, color } from './theme';
 
 // The screen is a window: world units are "half screen heights", the screen
 // rectangle sits at z = 0, the room goes back into negative z, and the camera is
@@ -32,10 +33,12 @@ export class Stage {
         const r = (this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' }));
         // Pixel ratio cap: the biggest single lever for keeping a fanless laptop cool.
         r.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-        r.setClearColor(0x04050a, 1);
+        r.setClearColor(THEME.bg, 1);
         container.appendChild(r.domElement);
 
         this.scene = new THREE.Scene();
+        this.sky = makeSky();
+        this.scene.add(this.sky);
         this.camera = new THREE.PerspectiveCamera(40, 1, 0.05, 60);
         this.scene.add(this.camera);
 
@@ -46,7 +49,7 @@ export class Stage {
         const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 });
         this.composer = new EffectComposer(r, rt);
         this.composer.addPass(new RenderPass(this.scene, this.camera));
-        this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.85, 0.55, 0.92);
+        this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.45, 0.7, 1.0);
         this.composer.addPass(this.bloom);
         this.composer.addPass(new OutputPass());
 
@@ -93,53 +96,50 @@ export class Stage {
         this.roomGroup.clear();
         const W = this.W, H = this.H, D = ROOM_D;
         const pos = [], col = [];
-        const c = new THREE.Color();
+        const line = color(THEME.sky), fog = color(THEME.bg), c = new THREE.Color();
         const seg = (a, b) => {
             pos.push(...a, ...b);
             for (const p of [a, b]) {
-                // Brighter at the screen edge, fading into the distance.
-                const f = 1 - Math.min(1, -p[2] / D) * 0.85;
-                c.setRGB(0.16 * f, 0.55 * f, 0.9 * f);
+                // Lines melt into the mist with distance, like a room fading into a dream.
+                c.copy(line).lerp(fog, Math.min(1, -p[2] / D) * 0.9);
                 col.push(c.r, c.g, c.b);
             }
         };
-        const n = 12;
-        for (let i = 0; i <= n; i++) {
+        const n = 10;
+        for (let i = 1; i <= n; i++) {
             const z = -(i / n) * D;
-            // rings around the room
             seg([-W / 2, -H / 2, z], [W / 2, -H / 2, z]);
             seg([-W / 2, H / 2, z], [W / 2, H / 2, z]);
             seg([-W / 2, -H / 2, z], [-W / 2, H / 2, z]);
             seg([W / 2, -H / 2, z], [W / 2, H / 2, z]);
         }
-        const m = 10;
+        const m = 8;
         for (let i = 0; i <= m; i++) {
             const x = -W / 2 + (i / m) * W, y = -H / 2 + (i / m) * H;
             seg([x, -H / 2, 0], [x, -H / 2, -D]);
             seg([x, H / 2, 0], [x, H / 2, -D]);
             seg([-W / 2, y, 0], [-W / 2, y, -D]);
             seg([W / 2, y, 0], [W / 2, y, -D]);
-            seg([x, -H / 2, -D], [x, H / 2, -D]);
-            seg([-W / 2, y, -D], [W / 2, y, -D]);
         }
         const g = new THREE.BufferGeometry();
         g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
         g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
         this.room = new THREE.LineSegments(g, new THREE.LineBasicMaterial({
-            vertexColors: true, transparent: true, opacity: 0.42, blending: THREE.AdditiveBlending, depthWrite: false,
+            vertexColors: true, transparent: true, opacity: 0.28, depthWrite: false,
         }));
         this.roomGroup.add(this.room);
     }
 
-    setRoomTint(color, strength = 1) {
+    setRoomTint(tint, strength = 1) {
         if (!this.room) return;
-        this.room.material.color.set(color).multiplyScalar(strength);
+        this.room.material.color.set(tint);
+        this.room.material.opacity = 0.28 * strength;
     }
 
     async setDemo(DemoClass) {
         this.demo?.dispose();
         this.demo = null;
-        this.setRoomTint(0xffffff, 1);
+        this.setRoomTint(THEME.sky, 1);
         if (DemoClass) {
             const d = new DemoClass(this);
             this.demo = d;
@@ -255,6 +255,9 @@ export class Stage {
         const frame = this.buildFrame(t);
         this.frame = frame;
         this.dust.material.uniforms.uTime.value = t;
+        this.sky.material.uniforms.uTime.value = t;
+        this.sky.material.uniforms.uEye.value.set(this.eye.x, this.eye.y);
+        this.sky.material.uniforms.uAspect.value = this.aspect;
         this.handViz.visible = tr.mode === 'camera';
         this.handViz.update(frame, dt);
         this.demo?.update?.(dt, t, frame);
@@ -297,8 +300,44 @@ export class Stage {
     }
 }
 
+// Drifting aurora, drawn as one full-screen quad behind everything (cheap: one shader, no textures).
+// It shifts a touch against your head movement, which adds to the window illusion.
+function makeSky() {
+    const m = new THREE.ShaderMaterial({
+        depthTest: false, depthWrite: false,
+        uniforms: {
+            uTime: { value: 0 }, uAspect: { value: 1 }, uEye: { value: new THREE.Vector2() },
+            uBg: { value: color(THEME.bg) }, uGlow: { value: color(THEME.glow) },
+            uSky: { value: color(THEME.sky) }, uLilac: { value: color('#c9b8ff') },
+        },
+        vertexShader: /* glsl */`
+            varying vec2 vUv;
+            void main(){ vUv = uv; gl_Position = vec4(position.xy * 2.0, 0.9999, 1.0); }`,
+        fragmentShader: /* glsl */`
+            uniform float uTime; uniform float uAspect; uniform vec2 uEye;
+            uniform vec3 uBg; uniform vec3 uGlow; uniform vec3 uSky; uniform vec3 uLilac;
+            varying vec2 vUv;
+            float blob(vec2 p, vec2 c, float r){ vec2 d = (p - c) * vec2(uAspect, 1.0); return smoothstep(r, 0.0, length(d)); }
+            void main(){
+                vec2 p = vUv - uEye * vec2(0.015, 0.02);
+                float t = uTime * 0.12;
+                vec3 col = uBg;
+                col = mix(col, uGlow, 0.85 * blob(p, vec2(0.15 + 0.1*sin(t), 0.85 + 0.06*cos(t*1.3)), 0.95));
+                col = mix(col, uSky,  0.55 * blob(p, vec2(0.95 + 0.08*cos(t*0.8), 0.45 + 0.1*sin(t*1.1)), 0.85));
+                col = mix(col, uLilac,0.45 * blob(p, vec2(0.45 + 0.12*sin(t*0.7+2.0), 0.05 + 0.05*cos(t)), 0.8));
+                col = mix(col, uGlow, 0.5 * blob(p, vec2(0.6 + 0.1*cos(t*0.9+1.0), 0.7 + 0.08*sin(t*0.6)), 0.55));
+                col = mix(col, vec3(1.0), 0.18); // thin white veil, like Dreamloom
+                gl_FragColor = vec4(col, 1.0);
+            }`,
+    });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), m);
+    mesh.frustumCulled = false;
+    mesh.renderOrder = -100;
+    return mesh;
+}
+
 function makeDust() {
-    const N = 1400;
+    const N = 900;
     const pos = new Float32Array(N * 3), seed = new Float32Array(N);
     for (let i = 0; i < N; i++) {
         pos[i * 3] = (Math.random() - 0.5) * 7;
@@ -309,26 +348,28 @@ function makeDust() {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     g.setAttribute('seed', new THREE.BufferAttribute(seed, 1));
+    // Soft pearly motes: white cores with a faint periwinkle edge.
     const m = new THREE.ShaderMaterial({
-        transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-        uniforms: { uTime: { value: 0 } },
+        transparent: true, depthWrite: false,
+        uniforms: { uTime: { value: 0 }, uEdge: { value: color(THEME.sky) } },
         vertexShader: /* glsl */`
             attribute float seed; uniform float uTime; varying float vA;
             void main(){
                 vec3 p = position;
-                p.y += sin(uTime*0.2 + seed*40.0)*0.08;
+                p.y += sin(uTime*0.2 + seed*40.0)*0.08 + mod(uTime*0.02*(0.5+seed), 0.3);
                 p.x += cos(uTime*0.15 + seed*30.0)*0.06;
                 vec4 mv = modelViewMatrix * vec4(p,1.0);
                 gl_Position = projectionMatrix * mv;
-                gl_PointSize = (2.0 + seed*3.0) * (3.0 / -mv.z);
-                vA = (0.25 + 0.75*abs(sin(uTime*0.8 + seed*20.0))) * smoothstep(9.0, 2.0, -mv.z);
+                gl_PointSize = (3.0 + seed*6.0) * (3.0 / -mv.z);
+                vA = (0.35 + 0.65*abs(sin(uTime*0.6 + seed*20.0))) * smoothstep(9.0, 2.0, -mv.z);
             }`,
         fragmentShader: /* glsl */`
-            varying float vA;
+            uniform vec3 uEdge; varying float vA;
             void main(){
                 float d = length(gl_PointCoord - 0.5);
-                float a = smoothstep(0.5, 0.0, d) * vA;
-                gl_FragColor = vec4(vec3(0.55,0.8,1.2) * a, a);
+                float a = smoothstep(0.5, 0.1, d) * vA * 0.8;
+                vec3 c = mix(vec3(1.0), uEdge, smoothstep(0.1, 0.5, d));
+                gl_FragColor = vec4(c, a);
             }`,
     });
     return new THREE.Points(g, m);

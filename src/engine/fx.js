@@ -16,7 +16,7 @@ export class Sparks {
         g.setAttribute('life', new THREE.BufferAttribute(this.life, 1));
         g.setAttribute('size', new THREE.BufferAttribute(this.size, 1));
         this.points = new THREE.Points(g, new THREE.ShaderMaterial({
-            transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+            transparent: true, depthWrite: false,
             vertexShader: /* glsl */`
                 attribute float life; attribute float size; attribute vec3 color; varying vec3 vC; varying float vL;
                 void main(){ vC = color; vL = life; vec4 mv = modelViewMatrix*vec4(position,1.0);
@@ -24,7 +24,8 @@ export class Sparks {
             fragmentShader: /* glsl */`
                 varying vec3 vC; varying float vL;
                 void main(){ if (vL <= 0.0) discard; float d = length(gl_PointCoord-0.5);
-                    float a = smoothstep(0.5,0.0,d); gl_FragColor = vec4(vC*a*vL, a*vL); }`,
+                    float a = smoothstep(0.5,0.15,d);
+                    gl_FragColor = vec4(mix(vec3(1.0), vC, smoothstep(0.0,0.4,d)), a*vL*0.9); }`,
         }));
         this.points.frustumCulled = false;
         this.points.renderOrder = 5;
@@ -44,7 +45,7 @@ export class Sparks {
             this.vel[i * 3 + 1] = Math.sin(ph) * Math.sin(th) * s + up;
             this.vel[i * 3 + 2] = Math.cos(ph) * s;
             const c = Array.isArray(color) ? color[n % color.length] : color;
-            this.col[i * 3] = c.r * 2; this.col[i * 3 + 1] = c.g * 2; this.col[i * 3 + 2] = c.b * 2;
+            this.col[i * 3] = c.r; this.col[i * 3 + 1] = c.g; this.col[i * 3 + 2] = c.b;
             this.life[i] = 1;
             this.size[i] = size * (0.5 + Math.random());
         }

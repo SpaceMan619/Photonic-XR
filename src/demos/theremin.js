@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import { Line2 } from 'three/examples/jsm/lines/Line2.js';
+import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { ui, coachDone } from '../engine/store';
 import { audio } from '../engine/audio';
 import { clamp, damp } from '../engine/filters';
@@ -41,16 +44,19 @@ export class ThereminDemo {
 
     init() {
         const st = this.stage, W = st.W;
-        // Live waveform line across the room.
-        const g = new THREE.BufferGeometry();
-        g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N_WAVE * 3), 3));
-        this.waveLine = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending }));
-        this.waveLine.position.z = -1.4;
-        this.waveLine.frustumCulled = false;
-        this.root.add(this.waveLine);
+        // Live waveform: a ribbon with a soft halo, like the sculptor strokes.
+        this.wavePts = new Float32Array(N_WAVE * 3);
+        this.waveMat = new LineMaterial({ linewidth: 4, transparent: true, depthWrite: false });
+        this.waveHaloMat = new LineMaterial({ linewidth: 18, transparent: true, opacity: 0.25, depthWrite: false });
+        for (const m of [this.waveMat, this.waveHaloMat]) m.resolution.set(st.container.clientWidth, st.container.clientHeight);
+        this.waveGeo = new LineGeometry();
+        this.waveGeo.setPositions(this.wavePts);
+        this.waveHalo = new Line2(this.waveGeo, this.waveHaloMat);
+        this.waveLine = new Line2(this.waveGeo, this.waveMat);
+        for (const l of [this.waveHalo, this.waveLine]) { l.position.z = -1.4; l.frustumCulled = false; this.root.add(l); }
 
         // Spectrum bars on the back wall.
-        this.bars = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 0.02), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending }), N_BARS);
+        this.bars = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 0.02), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthWrite: false }), N_BARS);
         this.bars.position.z = -5.5;
         this.root.add(this.bars);
 
@@ -62,7 +68,7 @@ export class ThereminDemo {
             if (!inScale) continue;
             const y = this.midiToY(m);
             const tick = new THREE.Mesh(new THREE.PlaneGeometry(m % 12 === 9 ? 0.22 : 0.12, 0.006),
-                new THREE.MeshBasicMaterial({ color: new THREE.Color(0.4, 0.8, 1.6), transparent: true, opacity: 0.6 }));
+                new THREE.MeshBasicMaterial({ color: new THREE.Color('#55627d'), transparent: true, opacity: 0.45 }));
             tick.position.y = y;
             this.rail.add(tick);
             if (m % 12 === 9) {
@@ -79,7 +85,7 @@ export class ThereminDemo {
         this.root.add(this.rail);
 
         this.makeVoice();
-        st.setRoomTint('#66d9ff', 1);
+        st.setRoomTint('#7fa8ff', 1);
     }
 
     midiToY(m) { return ((m - LOW) / (HIGH - LOW) - 0.5) * this.stage.H * 0.8; }
@@ -156,13 +162,13 @@ export class ThereminDemo {
 
         // Visuals
         this.hue = ((this.midi - LOW) / (HIGH - LOW)) * 0.75 + 0.5;
-        const col = new THREE.Color().setHSL(this.hue % 1, 0.9, 0.55);
+        const col = new THREE.Color().setHSL(this.hue % 1, 0.7, 0.62);
         this.marker.position.y = this.midiToY(this.midi);
-        this.marker.material.color.copy(col).multiplyScalar(1 + this.level * 3);
+        this.marker.material.color.copy(col).multiplyScalar(1 + this.level * 0.6);
         this.marker.scale.setScalar(1 + this.level * 0.8);
 
         const W = st.W;
-        const pos = this.waveLine.geometry.attributes.position.array;
+        const pos = this.wavePts;
         if (this.analyser) this.analyser.getFloatTimeDomainData(this.wave);
         for (let i = 0; i < N_WAVE; i++) {
             const x = (i / (N_WAVE - 1) - 0.5) * W * 0.9;
@@ -171,8 +177,10 @@ export class ThereminDemo {
             pos[i * 3 + 1] = (this.analyser ? this.wave[i] * 2.4 : 0) * env + Math.sin(t * 2 + i * 0.05) * 0.01;
             pos[i * 3 + 2] = Math.cos(i * 0.08 + t) * 0.1 * this.level;
         }
-        this.waveLine.geometry.attributes.position.needsUpdate = true;
-        this.waveLine.material.color.copy(col).multiplyScalar(1.2 + this.level * 2.5);
+        this.waveGeo.setPositions(pos);
+        this.waveMat.color.copy(col).lerp(new THREE.Color('#24304a'), 0.25 - this.level * 0.2);
+        this.waveHaloMat.color.copy(col);
+        this.waveHaloMat.opacity = 0.15 + this.level * 0.25;
 
         if (this.analyser) this.analyser.getByteFrequencyData(this.freq);
         const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3();
@@ -183,18 +191,25 @@ export class ThereminDemo {
             p.set((i - N_BARS / 2 + 0.5) * bw, -st.H / 2 - 0.2 + hgt / 2 + 0.25, 0);
             s.set(bw * 0.6, hgt, 1);
             this.bars.setMatrixAt(i, m.compose(p, q, s));
-            this.bars.setColorAt(i, new THREE.Color().setHSL((this.hue + i / N_BARS * 0.3) % 1, 0.9, 0.5).multiplyScalar(0.6 + a * 2));
+            this.bars.setColorAt(i, new THREE.Color().setHSL((this.hue + i / N_BARS * 0.3) % 1, 0.75, 0.7 - a * 0.16));
         }
         this.bars.instanceMatrix.needsUpdate = true;
         if (this.bars.instanceColor) this.bars.instanceColor.needsUpdate = true;
 
-        st.setRoomTint(col.clone().lerp(new THREE.Color(1, 1, 1), 0.5), 0.8 + this.level * 1.2);
+        st.setRoomTint(col, 0.8 + this.level * 0.8);
         const name = right ? noteName(this.target ?? this.midi) : null;
         if (ui.get().thereminNote !== name) ui.set({ thereminNote: name });
     }
 
+    resize() {
+        for (const m of [this.waveMat, this.waveHaloMat]) m?.resolution.set(this.stage.container.clientWidth, this.stage.container.clientHeight);
+    }
+
     dispose() {
         window.removeEventListener('keydown', this.onKey);
+        this.waveGeo?.dispose();
+        this.waveMat?.dispose();
+        this.waveHaloMat?.dispose();
         this.stage.scene.remove(this.root);
         this.root.traverse((o) => { if (o.isCSS2DObject) o.element.remove(); });
         if (this.v) {

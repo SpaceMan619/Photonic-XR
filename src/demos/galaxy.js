@@ -6,7 +6,7 @@ import { damp, clamp } from '../engine/filters';
 import { Sparks } from '../engine/fx';
 import { PHOTO_GEO, makePhotoMaterial } from './photoMaterial';
 
-const PALETTE = ['#5ee7ff', '#ff6bd6', '#ffd166', '#7cff9b', '#a78bfa', '#ff8a5c'];
+import { PALETTE, THEME } from '../engine/theme';
 const BASE_H = 0.42;
 const CENTER = new THREE.Vector3(0, 0, -1.9);
 const TAP_TIME = 0.28;
@@ -123,10 +123,11 @@ export class GalaxyDemo {
             const color = new THREE.Color(PALETTE[i % PALETTE.length]);
             const pos = new THREE.Vector3(n === 1 ? 0 : -span / 2 + (i / (n - 1)) * span, 0.05, -2.1);
             const mesh = new THREE.Mesh(
-                new THREE.TorusGeometry(rad, 0.012, 8, 96),
-                new THREE.MeshBasicMaterial({ color: color.clone().multiplyScalar(2.2), transparent: true, opacity: 0 }),
+                new THREE.TorusGeometry(rad, 0.024, 12, 120),
+                new THREE.MeshBasicMaterial({ color: color.clone(), transparent: true, opacity: 0, depthWrite: false, depthTest: false }),
             );
             mesh.position.copy(pos);
+            mesh.renderOrder = 2; // drawn over the orbiting photos like a halo
             const el = document.createElement('div');
             el.className = 'ring-label';
             el.style.setProperty('--c', PALETTE[i % PALETTE.length]);
@@ -149,7 +150,7 @@ export class GalaxyDemo {
         this.mode = mode;
         if (this.focus) this.unfocus(true);
         for (const c of this.cards) if (c.state === 'free') c.vel.add(new THREE.Vector3((Math.random() - 0.5), Math.random() * 0.5, 0));
-        this.stage.setRoomTint(mode === 'sort' ? '#b9a6ff' : '#ffffff', 1);
+        this.stage.setRoomTint(mode === 'sort' ? THEME.lilac : THEME.sky, 1);
         audio.whoosh(null, 1.5);
     }
 
@@ -262,7 +263,7 @@ export class GalaxyDemo {
         for (const r of this.rings) {
             r.pulse = Math.max(0, r.pulse - dt * 1.5);
             const m = r.mesh.material;
-            m.opacity += (ringOn * (0.55 + r.pulse) - m.opacity) * k;
+            m.opacity += (ringOn * (0.75 + r.pulse * 0.25) - m.opacity) * k;
             r.mesh.scale.setScalar(1 + r.pulse * 0.25 + Math.sin(t * 2 + r.pos.x) * 0.015);
             r.mesh.rotation.z = t * 0.2;
             r.label.visible = m.opacity > 0.05;
@@ -439,7 +440,8 @@ export class GalaxyDemo {
             const d = Math.hypot((sp.x - rp.x) * this.stage.aspect, sp.y - rp.y);
             if (d < bestD) { bestD = d; best = r; }
         }
-        for (const r of this.rings) r.mesh.material.color.copy(r.color).multiplyScalar(r === best ? 4 : 2.2);
+        // The ring you're over brightens into a soft glow.
+        for (const r of this.rings) r.mesh.material.color.copy(r.color).multiplyScalar(r === best ? 1.6 : 1);
         if (!best || !commit) return !!best;
         const changed = best.name !== c.category;
         c.category = best.name;
@@ -502,7 +504,7 @@ export class GalaxyDemo {
         this.grabs = this.grabs.map((g) => (g?.card === c ? null : g));
         this.hover = this.hover.map((x) => (x === c ? null : x));
         this.deleted.push(c);
-        this.sparks.emit(c.pos, { count: 160, speed: 1.6, color: [new THREE.Color('#ff7b54'), new THREE.Color('#c084fc'), c.mat.uniforms.uGlow.value], spread: 0.4, up: 0.3 });
+        this.sparks.emit(c.pos, { count: 160, speed: 1.6, color: [new THREE.Color(THEME.rose), new THREE.Color(THEME.peach), new THREE.Color(THEME.lilac)], spread: 0.4, up: 0.3 });
         audio.dissolve(c.pos);
         toast('Photo burned away · press U to bring it back', 3200);
         this.updateCounts();
@@ -527,7 +529,9 @@ export class GalaxyDemo {
         if (!c || c.state === 'dead') { this.tag.visible = false; return; }
         this.tag.visible = true;
         const h = c.mesh.scale.y;
-        this.tag.position.copy(c.mesh.position).add(this._v.set(0, -h / 2 - 0.08, 0.02));
+        // Open photos get the tag on top so it never collides with the gesture legend.
+        const above = c === this.focus ? 1 : -1;
+        this.tag.position.copy(c.mesh.position).add(this._v.set(0, above * (h / 2 + 0.08), 0.02));
         const conf = Math.round((c.data.confidence || 0) * 100);
         const fixed = c.category !== c.aiCategory;
         const html = fixed

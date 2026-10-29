@@ -103,7 +103,7 @@ export default function Hud({ onBack }) {
 
             {!allDone && (
                 <div className="coach">
-                    <div className="coach-h">Try this</div>
+                    <div className="coach-h">try this ✦</div>
                     {steps.map(([id, text]) => (
                         <div key={id} className={`step ${coach[id] ? 'done' : ''}`}>
                             <span className="tick">{coach[id] ? '✓' : ''}</span>{text}
