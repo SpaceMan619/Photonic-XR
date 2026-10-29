@@ -4,7 +4,7 @@ import { ui, toast, coachDone } from '../engine/store';
 import { audio } from '../engine/audio';
 import { damp, clamp } from '../engine/filters';
 import { Sparks } from '../engine/fx';
-import { PHOTO_GEO, makePhotoMaterial } from './photoMaterial';
+import { PHOTO_GEO, PHOTO_GEO_LO, makePhotoMaterial } from './photoMaterial';
 
 import { PALETTE, THEME } from '../engine/theme';
 const BASE_H = 0.42;
@@ -68,18 +68,20 @@ export class GalaxyDemo {
         await Promise.all(m.photos.map(async (p, i) => {
             const [map, depth] = await Promise.all([load(p.src, true), load(p.depth, false)]);
             if (!map) return;
-            const mat = makePhotoMaterial(map, depth, PALETTE[m.categories.indexOf(p.category) % PALETTE.length]);
-            const mesh = new THREE.Mesh(PHOTO_GEO, mat);
+            const glow = PALETTE[m.categories.indexOf(p.category) % PALETTE.length];
+            const mat = makePhotoMaterial({ map, depth, meta: p.depthMeta, glow });
+            const mesh = new THREE.Mesh(PHOTO_GEO_LO, mat);
+            const mats = [mat];
             const g = new THREE.Vector3(...p.galaxy);
             const card = {
-                i, data: p, mesh, mat, category: p.category, aiCategory: p.category,
+                i, data: p, mesh, mat, mats, category: p.category, aiCategory: p.category,
                 pos: new THREE.Vector3(g.x * 3, g.y * 2, -8 - Math.random() * 3), // fly in from the back
                 vel: new THREE.Vector3(),
                 home: new THREE.Vector3(),
                 galaxyHome: new THREE.Vector3(g.x * this.stage.W * 0.34, g.y * 0.68, CENTER.z + g.z * 1.2),
                 custom: null,
                 state: 'free', scale: 1, userScale: 1, roll: 0, tilt: new THREE.Vector2(),
-                hover: 0, warn: 0, dim: 1, depthAmt: 0.22, dissolve: 0,
+                hover: 0, warn: 0, dim: 1, depthAmt: 0.3, dissolve: 0,
                 spin: Math.random() * Math.PI * 2,
             };
             mesh.userData.card = card;
@@ -203,20 +205,22 @@ export class GalaxyDemo {
         for (const c of this.cards) {
             if (c.state === 'dead') {
                 c.dissolve = Math.min(1, c.dissolve + dt * 1.1);
-                c.mat.uniforms.uDissolve.value = c.dissolve;
+                for (const m of c.mats) m.uniforms.uDissolve.value = c.dissolve;
                 c.mesh.visible = c.dissolve < 1;
                 continue;
             }
             this.computeHome(c, t);
             let targetScale = c.scale * c.userScale;
-            let targetDepth = 0.22;
-            let dim = this.focus && this.focus !== c ? 0.15 : 1;
+            // How far a photo opens into true 3D: a little in the galaxy, more on hover, fully when opened.
+            let targetDepth = 0.3 + c.hover * 0.2;
+            // An open photo gets the room to itself.
+            let dim = this.focus && this.focus !== c ? 0 : 1;
 
             if (c.state === 'focus') {
-                const maxH = Math.min(1.05, (st.W * 0.5) / c.data.aspect);
+                const maxH = Math.min(0.95, (st.W * 0.45) / c.data.aspect);
                 c.home.set(0, 0, 0.45);
                 targetScale = (maxH / BASE_H) * c.userScale;
-                targetDepth = 0.5;
+                targetDepth = 1;
                 c.pos.lerp(c.home, damp(7, dt));
                 c.vel.set(0, 0, 0);
             } else if (c.state === 'held') {
@@ -236,6 +240,7 @@ export class GalaxyDemo {
             }
 
             c.dim += (dim - c.dim) * k;
+            c.mesh.visible = c.dim > 0.02;
             c.depthAmt += (targetDepth - c.depthAmt) * damp(5, dt);
             const s = THREE.MathUtils.lerp(c.mesh.scale.y / BASE_H || targetScale, targetScale, k);
             c.mesh.scale.set(BASE_H * c.data.aspect * s, BASE_H * s, BASE_H * s);
@@ -249,13 +254,16 @@ export class GalaxyDemo {
             const pitchTo = -Math.atan2(this._v.y, Math.hypot(this._v.x, this._v.z)) * 0.25;
             c.mesh.rotation.set(pitchTo + c.tilt.y, yawTo + c.tilt.x, c.roll, 'YXZ');
 
-            const u = c.mat.uniforms;
-            u.uTime.value = t;
-            u.uHover.value = c.state === 'focus' ? 0 : c.hover;
-            u.uWarn.value = c.warn;
-            u.uOpacity.value = c.dim;
-            u.uDepthAmt.value = c.depthAmt;
+            for (const m of c.mats) {
+                const u = m.uniforms;
+                u.uTime.value = t;
+                u.uHover.value = c.state === 'focus' ? 0 : c.hover;
+                u.uWarn.value = c.warn;
+                u.uOpacity.value = c.dim;
+                u.uDepthAmt.value = c.depthAmt;
+            }
             c.mesh.renderOrder = c.state === 'focus' || c.state === 'held' ? 3 : 1;
+            c.mesh.geometry = c.state === 'focus' ? PHOTO_GEO : PHOTO_GEO_LO;
         }
 
         // ---- rings ----
@@ -515,7 +523,7 @@ export class GalaxyDemo {
         for (const c of this.deleted) {
             c.state = 'free';
             c.dissolve = 0;
-            c.mat.uniforms.uDissolve.value = 0;
+            for (const m of c.mats) m.uniforms.uDissolve.value = 0;
             c.mesh.visible = true;
             c.pos.set(c.pos.x, c.pos.y, -7);
         }
@@ -546,7 +554,7 @@ export class GalaxyDemo {
         this.stage.scene.remove(this.group, this.tag);
         this.tag.element.remove();
         for (const r of this.rings) { this.stage.scene.remove(r.mesh, r.label); r.label.element.remove(); r.mesh.geometry.dispose(); }
-        for (const c of this.cards) { c.mat.uniforms.uMap.value?.dispose(); c.mat.uniforms.uDepth.value?.dispose(); c.mat.dispose(); }
+        for (const c of this.cards) for (const m of c.mats) { m.uniforms.uMap.value?.dispose(); m.uniforms.uDepth.value?.dispose(); m.dispose(); }
         this.sparks.dispose();
         ui.set({ hovered: null, focused: null });
     }

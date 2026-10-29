@@ -8,6 +8,12 @@
    "id": "p00",
    "src": "/demo/photos/p00.jpg",
    "depth": "/demo/depth/p00.png",
+   "depthMeta": {
+    "near": 0.2767,
+    "far": 1.0781,
+    "focus": 0.3718,
+    "fov": 46.06
+   },
    "aspect": 0.75,
    "category": "Jimmy",
    "confidence": 0.5,
@@ -22,6 +28,12 @@
    "id": "p01",
    "src": "/demo/photos/p01.jpg",
    "depth": "/demo/depth/p01.png",
+   "depthMeta": {
+    "near": 0.2323,
+    "far": 2.1943,
+    "focus": 0.3657,
+    "fov": 50.22
+   },
    "aspect": 0.75,
    "category": "Bruzo",
    "confidence": 0.502,
@@ -36,6 +48,12 @@
    "id": "p02",
    "src": "/demo/photos/p02.jpg",
    "depth": "/demo/depth/p02.png",
+   "depthMeta": {
+    "near": 0.3449,
+    "far": 1.165,
+    "focus": 0.4895,
+    "fov": 46.34
+   },
    "aspect": 0.75,
    "category": "Bruzo",
    "confidence": 0.508,
@@ -50,6 +68,12 @@
    "id": "p03",
    "src": "/demo/photos/p03.jpg",
    "depth": "/demo/depth/p03.png",
+   "depthMeta": {
+    "near": 0.3231,
+    "far": 1.6387,
+    "focus": 0.4849,
+    "fov": 43.53
+   },
    "aspect": 0.75,
    "category": "Bruzo",
    "confidence": 0.504,
@@ -64,6 +88,12 @@
    "id": "p04",
    "src": "/demo/photos/p04.jpg",
    "depth": "/demo/depth/p04.png",
+   "depthMeta": {
+    "near": 0.286,
+    "far": 2.1816,
+    "focus": 0.5659,
+    "fov": 47.06
+   },
    "aspect": 0.75,
    "category": "Bruzo",
    "confidence": 0.5,
@@ -78,6 +108,12 @@
    "id": "p05",
    "src": "/demo/photos/p05.jpg",
    "depth": "/demo/depth/p05.png",
+   "depthMeta": {
+    "near": 0.2144,
+    "far": 1.8223,
+    "focus": 0.3586,
+    "fov": 40.75
+   },
    "aspect": 0.5625,
    "category": "Bruzo",
    "confidence": 0.508,
@@ -92,6 +128,12 @@
    "id": "p06",
    "src": "/demo/photos/p06.jpg",
    "depth": "/demo/depth/p06.png",
+   "depthMeta": {
+    "near": 0.3052,
+    "far": 1.4043,
+    "focus": 0.4817,
+    "fov": 47.5
+   },
    "aspect": 0.75,
    "category": "Bruzo",
    "confidence": 0.506,
@@ -106,6 +148,12 @@
    "id": "p07",
    "src": "/demo/photos/p07.jpg",
    "depth": "/demo/depth/p07.png",
+   "depthMeta": {
+    "near": 0.9152,
+    "far": 2.5703,
+    "focus": 1.3457,
+    "fov": 26.3
+   },
    "aspect": 0.75,
    "category": "Bruzo",
    "confidence": 0.507,
@@ -120,6 +168,12 @@
    "id": "p08",
    "src": "/demo/photos/p08.jpg",
    "depth": "/demo/depth/p08.png",
+   "depthMeta": {
+    "near": 0.2846,
+    "far": 2.6211,
+    "focus": 0.4858,
+    "fov": 39.44
+   },
    "aspect": 0.5645,
    "category": "Bruzo",
    "confidence": 0.506,
@@ -134,6 +188,12 @@
    "id": "p09",
    "src": "/demo/photos/p09.jpg",
    "depth": "/demo/depth/p09.png",
+   "depthMeta": {
+    "near": 0.1876,
+    "far": 1.4971,
+    "focus": 0.3186,
+    "fov": 45.66
+   },
    "aspect": 0.75,
    "category": "Jimmy",
    "confidence": 0.51,
@@ -148,6 +208,12 @@
    "id": "p10",
    "src": "/demo/photos/p10.jpg",
    "depth": "/demo/depth/p10.png",
+   "depthMeta": {
+    "near": 0.6749,
+    "far": 1.8926,
+    "focus": 1.165,
+    "fov": 39.69
+   },
    "aspect": 0.75,
    "category": "Jimmy",
    "confidence": 0.511,
@@ -162,6 +228,12 @@
    "id": "p11",
    "src": "/demo/photos/p11.jpg",
    "depth": "/demo/depth/p11.png",
+   "depthMeta": {
+    "near": 0.8693,
+    "far": 1.9727,
+    "focus": 1.0898,
+    "fov": 42.56
+   },
    "aspect": 0.75,
    "category": "Jimmy",
    "confidence": 0.515,
@@ -176,6 +248,12 @@
    "id": "p12",
    "src": "/demo/photos/p12.jpg",
    "depth": "/demo/depth/p12.png",
+   "depthMeta": {
+    "near": 0.3739,
+    "far": 1.7852,
+    "focus": 0.5254,
+    "fov": 32.88
+   },
    "aspect": 0.75,
    "category": "Jimmy",
    "confidence": 0.51,
@@ -190,6 +268,12 @@
    "id": "p13",
    "src": "/demo/photos/p13.jpg",
    "depth": "/demo/depth/p13.png",
+   "depthMeta": {
+    "near": 0.2111,
+    "far": 1.6846,
+    "focus": 0.2808,
+    "fov": 46.16
+   },
    "aspect": 0.5625,
    "category": "Jimmy",
    "confidence": 0.511,
@@ -204,6 +288,12 @@
    "id": "p14",
    "src": "/demo/photos/p14.jpg",
    "depth": "/demo/depth/p14.png",
+   "depthMeta": {
+    "near": 0.8716,
+    "far": 2.2871,
+    "focus": 1.0322,
+    "fov": 38.31
+   },
    "aspect": 0.75,
    "category": "Jimmy",
    "confidence": 0.509,
@@ -218,6 +308,12 @@
    "id": "p15",
    "src": "/demo/photos/p15.jpg",
    "depth": "/demo/depth/p15.png",
+   "depthMeta": {
+    "near": 0.1408,
+    "far": 0.7554,
+    "focus": 0.2808,
+    "fov": 47.56
+   },
    "aspect": 0.75,
    "category": "Jimmy",
    "confidence": 0.508,
@@ -232,6 +328,12 @@
    "id": "p16",
    "src": "/demo/photos/p16.jpg",
    "depth": "/demo/depth/p16.png",
+   "depthMeta": {
+    "near": 1.7052,
+    "far": 3.3301,
+    "focus": 1.8418,
+    "fov": 40.25
+   },
    "aspect": 0.75,
    "category": "Jimmy",
    "confidence": 0.513,
@@ -246,6 +348,12 @@
    "id": "p17",
    "src": "/demo/photos/p17.jpg",
    "depth": "/demo/depth/p17.png",
+   "depthMeta": {
+    "near": 0.2825,
+    "far": 2.2363,
+    "focus": 0.3862,
+    "fov": 48.62
+   },
    "aspect": 0.75,
    "category": "Jimmy",
    "confidence": 0.511,
@@ -260,6 +368,12 @@
    "id": "p18",
    "src": "/demo/photos/p18.jpg",
    "depth": "/demo/depth/p18.png",
+   "depthMeta": {
+    "near": 0.6327,
+    "far": 2.3633,
+    "focus": 0.8882,
+    "fov": 48.88
+   },
    "aspect": 0.75,
    "category": "Jimmy",
    "confidence": 0.512,
@@ -274,6 +388,12 @@
    "id": "p19",
    "src": "/demo/photos/p19.jpg",
    "depth": "/demo/depth/p19.png",
+   "depthMeta": {
+    "near": 6.7799,
+    "far": 48.4062,
+    "focus": 8.8438,
+    "fov": 3.47
+   },
    "aspect": 0.5898,
    "category": "Jimmy",
    "confidence": 0.513,
@@ -288,6 +408,12 @@
    "id": "p20",
    "src": "/demo/photos/p20.jpg",
    "depth": "/demo/depth/p20.png",
+   "depthMeta": {
+    "near": 5.4217,
+    "far": 378.375,
+    "focus": 63.0625,
+    "fov": 8.9
+   },
    "aspect": 1.5009,
    "category": "Jimmy",
    "confidence": 0.506,
