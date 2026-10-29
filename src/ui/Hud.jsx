@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { ui, useUI } from '../engine/store';
 import StatusPill from './StatusPill';
+import MusicHud from './MusicHud';
 
-const TITLES = { galaxy: 'Photo Galaxy', draw: 'Light Sculptor', theremin: 'Air Theremin', splats: 'Splat Worlds' };
+const TITLES = { galaxy: 'Photo Galaxy', draw: 'Light Sculptor', theremin: 'Air Theremin', choir: 'Choir Conductor', splats: 'Splat Worlds' };
 
 const LEGEND = {
     galaxy: [
@@ -19,14 +20,6 @@ const LEGEND = {
         ['Other hand pinch', 'turn sculpture'],
         ['Push', 'undo'],
         ['Fist (hold)', 'clear'],
-    ],
-    theremin: [
-        ['Right pinch', 'play'],
-        ['Right height', 'note'],
-        ['Right push', 'brighter'],
-        ['Left height', 'volume'],
-        ['Left fingers', 'wave shape'],
-        ['Right open hand', 'vibrato'],
     ],
     splats: [
         ['Pinch + drag', 'turn it / look around'],
@@ -61,10 +54,6 @@ const COACH = {
         ['draw', 'Pinch and move to draw'],
         ['rotate', 'Pinch with your other hand to turn it'],
     ],
-    theremin: [
-        ['play', 'Pinch your right hand to play'],
-        ['volume', 'Raise your left hand for volume'],
-    ],
     splats: [
         ['orbit', 'Pinch and drag to turn it'],
         ['zoom', 'Pinch with both hands and spread'],
@@ -82,9 +71,7 @@ export default function Hud({ onBack }) {
     const input = useUI((s) => s.input);
     const mode = useUI((s) => s.galaxyMode);
     const mirror = useUI((s) => s.drawMirror);
-    const snap = useUI((s) => s.thereminSnap);
-    const note = useUI((s) => s.thereminNote);
-    const toastText = useUI((s) => s.toast);
+        const toastText = useUI((s) => s.toast);
     const coach = useUI((s) => s.coach);
     const photoSet = useUI((s) => s.photoSet);
     const counts = useUI((s) => s.counts);
@@ -129,16 +116,11 @@ export default function Hud({ onBack }) {
                             <button data-hand className={portal ? 'on' : ''} onClick={() => ui.set({ splatPortal: !portal })}>Portal {portal ? 'on' : 'off'}</button>
                         </div>
                     )}
-                    {demo === 'theremin' && (
-                        <div className="seg">
-                            <button data-hand className={snap ? 'on' : ''} onClick={() => ui.set({ thereminSnap: !snap })}>{snap ? 'Snap to scale' : 'Free pitch'}</button>
-                        </div>
-                    )}
                 </div>
                 <StatusPill />
             </div>
 
-            {demo === 'theremin' && <div className={`big-note ${note ? 'on' : ''}`}>{note || '—'}</div>}
+            {(demo === 'theremin' || demo === 'choir') && <MusicHud demo={demo} input={input} />}
 
             {demo === 'galaxy' && (
                 <div className="set-note">
@@ -195,7 +177,7 @@ export default function Hud({ onBack }) {
                     <span key={g}><b>{g}</b>{a}</span>
                 ))}
             </div>
-            {input === 'mouse' && !MOUSE_LEGEND[demo] && <div className="mouse-keys">{MOUSE_KEYS}</div>}
+            {input === 'mouse' && !MOUSE_LEGEND[demo] && demo !== 'theremin' && demo !== 'choir' && <div className="mouse-keys">{MOUSE_KEYS}</div>}
             <div className={`toast ${toastText ? 'on' : ''}`}>{toastText}</div>
         </div>
     );

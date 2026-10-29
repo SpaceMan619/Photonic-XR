@@ -21,7 +21,7 @@ export function createStore(initial) {
 
 export const ui = createStore({
     screen: 'start',        // start | menu | demo
-    demo: null,             // galaxy | draw | theremin | splats
+    demo: null,             // galaxy | draw | theremin | choir | splats
     input: 'none',          // none | loading | camera | mouse | error
     inputError: null,
     galaxyMode: 'galaxy',   // galaxy | sort
@@ -34,7 +34,14 @@ export const ui = createStore({
     coach: {},              // coach step id -> true when done
     toast: null,
     drawMirror: false,
-    thereminSnap: true,
+    thereminInst: 'piano',  // see INSTRUMENTS in demos/theremin.js
+    thereminSong: null,     // null = free play, else a SONGS id
+    thereminSongPos: 0,
+    choirSong: 'ode',
+    choirTempo: 1,          // speed multiplier on the song's own tempo
+    choirInfo: null,        // { dyn, vowel, held, bpm }
+    choirNote: null,
+    choirPos: 0,
     thereminNote: null,
     photoSet: null,         // 'local' | 'demo'
     categories: [],

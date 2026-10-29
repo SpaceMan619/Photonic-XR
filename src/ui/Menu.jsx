@@ -19,9 +19,16 @@ const ITEMS = [
     {
         id: 'theremin',
         name: 'Air Theremin',
-        line: 'Play music with no instrument. One hand sets the note, the other the volume.',
-        tags: ['Synth', 'Spatial audio'],
+        line: 'Play piano, harp, strings and more in the air, or tap along to a song that always lands on the right notes.',
+        tags: ['8 instruments', 'Songs'],
         glyph: 'theremin',
+    },
+    {
+        id: 'choir',
+        name: 'Choir Conductor',
+        line: 'A four-part choir sings a song for you. Your hand shapes how loud, how fast and what vowel they sing.',
+        tags: ['Choir', 'Conducting'],
+        glyph: 'choir',
     },
     {
         id: 'splats',

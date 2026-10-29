@@ -59,7 +59,13 @@ export class Tracker {
         this._fpsCount = 0;
         this._fpsT = performance.now();
         this._mouse = null;
+        this._listeners = new Set();
     }
+
+    // Called straight from the input event, before the next frame is drawn.
+    // Music uses this so a pinch sounds instantly instead of up to a frame late.
+    onInput(fn) { this._listeners.add(fn); return () => this._listeners.delete(fn); }
+    _emit() { for (const fn of this._listeners) fn(this.hands); }
 
     now() { return performance.now() / 1000; }
 
@@ -119,6 +125,7 @@ export class Tracker {
         const t = performance.now() / 1000;
         const aspect = this.video.videoWidth / this.video.videoHeight;
         this._updateHands(r.hands, t, aspect);
+        this._emit();
         if (r.doFace) this._updateHead(r.iris, t, aspect);
         this.lastResult = r;
 
@@ -276,6 +283,7 @@ export class Tracker {
                 hand.fingers = m.fist ? 0 : m.down ? 2 : 5;
                 fakeLandmarks(hand);
             }
+            this._emit();
         };
         const on = (el, ev, fn, opt) => { el.addEventListener(ev, fn, opt); this._off.push(() => el.removeEventListener(ev, fn, opt)); };
         this._off = [];

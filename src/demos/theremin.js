@@ -3,43 +3,58 @@ import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { Line2 } from 'three/examples/jsm/lines/Line2.js';
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
-import { ui, coachDone } from '../engine/store';
+import { ui, coachDone, toast } from '../engine/store';
 import { audio } from '../engine/audio';
 import { clamp, damp } from '../engine/filters';
+import { INSTRUMENTS, SONGS, SCALE, NAMES, midiToHz, noteName, strike, release } from './music';
 
-const LOW = 45, HIGH = 81;                 // A2 .. A5
-const PENTA = [0, 3, 5, 7, 10];            // A minor pentatonic
-const NAMES = ['A', 'A♯', 'B', 'C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯'];
-const WAVES = ['sine', 'sine', 'triangle', 'sawtooth', 'square', 'sawtooth'];
+// Only the white piano keys, C3 .. C5, so every note you can land on is in C major.
+const BASE = 48;                           // C3
+const N_DEG = 15;                          // C3 .. C5
 const N_WAVE = 256, N_BARS = 48;
+const INST = Object.fromEntries(INSTRUMENTS.map((i) => [i.id, i]));
 
-const midiToHz = (m) => 440 * Math.pow(2, (m - 69) / 12);
-const noteName = (m) => NAMES[((Math.round(m) - 69) % 12 + 12) % 12] + (Math.floor((Math.round(m) - 12) / 12) - 0);
+const degToMidi = (d) => BASE + 12 * Math.floor(d / 7) + SCALE[((d % 7) + 7) % 7];
+// Nearest white-key position for any note, for placing the marker on the rail.
+const midiToDeg = (m) => { const o = Math.floor((m - BASE) / 12), k = ((m - BASE) % 12 + 12) % 12; return o * 7 + SCALE.findIndex((x) => x >= k); };
 
-function snap(m) {
-    let best = m, bd = 99;
-    for (let o = -12; o <= 48; o += 12) for (const s of PENTA) {
-        const c = 45 + o + s;
-        if (Math.abs(c - m) < bd) { bd = Math.abs(c - m); best = c; }
-    }
-    return best;
+export function pickInstrument(step) {
+    const i = INSTRUMENTS.findIndex((x) => x.id === ui.get().thereminInst);
+    const next = INSTRUMENTS[(i + step + INSTRUMENTS.length) % INSTRUMENTS.length];
+    ui.set({ thereminInst: next.id });
+    toast(`${next.icon}  ${next.name}`, 1200);
 }
 
-// Right hand pinch plays. Right hand height = pitch, pushing in = brighter.
-// Left hand height = volume, left finger count = waveform.
+// Right hand pinch plays. Right hand height = note, pushing in = brighter.
+// Left hand height = volume, left pinch = next instrument.
+// Notes are triggered from the tracker's input event, not the draw loop, so they sound at once.
 export class ThereminDemo {
     constructor(stage) {
         this.stage = stage;
         this.root = new THREE.Group();
         stage.scene.add(this.root);
-        this.midi = 57;
+        this.deg = null;
+        this.disp = 4;
+        this.midi = degToMidi(4);
+        this.playing = false;
+        this.leftPinch = false;
+        this.onUI = false;
         this.level = 0;
+        this.hit = 0;
         this.hue = 0.55;
+        this.notes = [];
+        this.songPos = 0;
         this.wave = new Float32Array(N_WAVE);
         this.freq = new Uint8Array(N_BARS * 4);
         this._v = new THREE.Vector3();
-        this.onKey = (e) => { if (e.key === 's') ui.set({ thereminSnap: !ui.get().thereminSnap }); };
+        this.onKey = (e) => {
+            const i = parseInt(e.key, 10) - 1;
+            if (INSTRUMENTS[i]) { ui.set({ thereminInst: INSTRUMENTS[i].id }); toast(`${INSTRUMENTS[i].icon}  ${INSTRUMENTS[i].name}`, 1200); }
+            if (e.key === 'ArrowRight') pickInstrument(1);
+            if (e.key === 'ArrowLeft') pickInstrument(-1);
+        };
         window.addEventListener('keydown', this.onKey);
+        this.offInput = stage.tracker.onInput((hands) => this.onHands(hands));
     }
 
     init() {
@@ -60,25 +75,21 @@ export class ThereminDemo {
         this.bars.position.z = -5.5;
         this.root.add(this.bars);
 
-        // Pitch rail with note labels on the right.
+        // Note rail on the right: one tick and letter per white key, so you can follow a song.
         this.rail = new THREE.Group();
         this.rail.position.set(W * 0.42, 0, -0.6);
-        for (let m = LOW; m <= HIGH; m++) {
-            const inScale = PENTA.includes(((m - 45) % 12 + 12) % 12);
-            if (!inScale) continue;
-            const y = this.midiToY(m);
-            const tick = new THREE.Mesh(new THREE.PlaneGeometry(m % 12 === 9 ? 0.22 : 0.12, 0.006),
-                new THREE.MeshBasicMaterial({ color: new THREE.Color('#55627d'), transparent: true, opacity: 0.45 }));
+        for (let d = 0; d < N_DEG; d++) {
+            const m = degToMidi(d), isC = m % 12 === 0, y = this.degToY(d);
+            const tick = new THREE.Mesh(new THREE.PlaneGeometry(isC ? 0.22 : 0.12, 0.006),
+                new THREE.MeshBasicMaterial({ color: new THREE.Color('#55627d'), transparent: true, opacity: isC ? 0.6 : 0.4 }));
             tick.position.y = y;
             this.rail.add(tick);
-            if (m % 12 === 9) {
-                const el = document.createElement('div');
-                el.className = 'note-label';
-                el.textContent = noteName(m);
-                const lab = new CSS2DObject(el);
-                lab.position.set(0.2, y, 0);
-                this.rail.add(lab);
-            }
+            const el = document.createElement('div');
+            el.className = `note-label ${isC ? 'c' : ''}`;
+            el.textContent = isC ? noteName(m) : NAMES[m % 12];
+            const lab = new CSS2DObject(el);
+            lab.position.set(0.2, y, 0);
+            this.rail.add(lab);
         }
         this.marker = new THREE.Mesh(new THREE.RingGeometry(0.035, 0.05, 32), new THREE.MeshBasicMaterial({ color: 0xffffff }));
         this.rail.add(this.marker);
@@ -88,82 +99,153 @@ export class ThereminDemo {
         st.setRoomTint('#7fa8ff', 1);
     }
 
-    midiToY(m) { return ((m - LOW) / (HIGH - LOW) - 0.5) * this.stage.H * 0.8; }
+    degToY(d) { return (d / (N_DEG - 1) - 0.5) * this.stage.H * 0.8; }
 
     makeVoice() {
         if (!audio.ctx) return;
         const ctx = audio.ctx;
+        // Held voice (strings, flute, theremin).
         const o1 = ctx.createOscillator(), o2 = ctx.createOscillator();
         const lfo = ctx.createOscillator(), lfoG = ctx.createGain();
-        const f = ctx.createBiquadFilter(), g = ctx.createGain();
-        const delay = ctx.createDelay(1), fb = ctx.createGain(), dw = ctx.createGain();
-        o2.detune.value = 7;
+        const f = ctx.createBiquadFilter(), sg = ctx.createGain();
         lfo.frequency.value = 5.5;
         lfoG.gain.value = 0;
         lfo.connect(lfoG);
         lfoG.connect(o1.frequency);
         lfoG.connect(o2.frequency);
         f.type = 'lowpass';
-        f.Q.value = 4;
-        g.gain.value = 0;
-        delay.delayTime.value = 0.33;
-        fb.gain.value = 0.35;
-        dw.gain.value = 0.3;
+        f.Q.value = 0.8;
+        sg.gain.value = 0;
+        o1.connect(f); o2.connect(f);
+        f.connect(sg);
+
+        // Shared output: brightness filter, volume, a light echo, 3D position.
+        const tone = ctx.createBiquadFilter(), out = ctx.createGain();
+        const delay = ctx.createDelay(1), fb = ctx.createGain(), dw = ctx.createGain();
+        tone.type = 'lowpass';
+        tone.Q.value = 0.7;
+        tone.frequency.value = 4000;
+        out.gain.value = 0.22;
+        delay.delayTime.value = 0.28;
+        fb.gain.value = 0.18;
+        dw.gain.value = 0.12;
         const pan = audio.panner(new THREE.Vector3(0, 0, -1));
         const an = (this.analyser = ctx.createAnalyser());
         an.fftSize = 512;
-        o1.connect(f); o2.connect(f);
-        f.connect(g);
-        g.connect(pan);
-        g.connect(an);
-        g.connect(delay); delay.connect(fb).connect(delay); delay.connect(dw).connect(pan);
+        sg.connect(tone);
+        tone.connect(out);
+        out.connect(pan);
+        out.connect(an);
+        out.connect(delay); delay.connect(fb).connect(delay); delay.connect(dw).connect(pan);
         [o1, o2, lfo].forEach((o) => o.start());
-        this.v = { o1, o2, lfoG, f, g, pan };
+        this.v = { o1, o2, lfoG, f, sg, tone, out, pan };
+    }
+
+    // Runs inside the pointer / camera event, so notes start the instant you pinch.
+    onHands(hands) {
+        if (!this.v) return;
+        const present = hands.filter((h) => h.present);
+        const right = present.length ? present.reduce((a, b) => (b.x > a.x ? b : a)) : null;
+        const left = present.length === 2 ? present.find((h) => h !== right) : null;
+        const inst = INST[ui.get().thereminInst] || INSTRUMENTS[0];
+        const song = SONGS.find((x) => x.id === ui.get().thereminSong);
+        if (song !== this.song) { this.song = song; this.songPos = 0; }
+
+        // Left pinch flips to the next instrument (camera only; the mouse has the dock and keys).
+        const lp = !!left?.pinch && this.stage.tracker.mode === 'camera';
+        if (lp && !this.leftPinch) pickInstrument(1);
+        this.leftPinch = lp;
+
+        // Hand height picks a white key. The note only changes once you've moved
+        // well past the halfway line, so a shaky hand doesn't flicker between keys.
+        let changed = false;
+        if (right) {
+            const raw = clamp((0.92 - right.y) / 0.84, 0, 1) * (N_DEG - 1);
+            if (this.deg === null || Math.abs(raw - this.deg) > 0.68) {
+                const d = Math.round(raw);
+                changed = d !== this.deg;
+                this.deg = d;
+            }
+        }
+        const pinch = !!right?.pinch;
+        const started = pinch && !this.playing;
+        // A pinch that starts on a button is a button press, not a note.
+        if (started) this.onUI = !!document.elementFromPoint(right.x * innerWidth, right.y * innerHeight)?.closest?.('[data-hand]');
+        this.playing = pinch;
+        if (this.onUI) { if (!pinch) this.onUI = false; return; }
+
+        const ctx = audio.ctx, now = ctx.currentTime, v = this.v;
+        if (started || (pinch && changed)) {
+            let midi = degToMidi(this.deg);
+            if (song) {
+                // Any key plays the next song note. Hand height only shifts the octave.
+                midi = song.notes[this.songPos].midi + (this.deg < 4 ? -12 : this.deg > 10 ? 12 : 0);
+                this.songPos = (this.songPos + 1) % song.notes.length;
+                ui.set({ thereminSongPos: this.songPos });
+            }
+            this.midi = midi;
+            const hz = midiToHz(midi + (inst.octave || 0));
+            if (inst.kind === 'hold') {
+                const glide = started ? 0.002 : inst.glide;
+                v.o1.frequency.setTargetAtTime(hz, now, glide);
+                v.o2.frequency.setTargetAtTime(hz, now, glide);
+                v.sg.gain.setTargetAtTime(0.9, now, inst.attack / 3);
+            } else {
+                // Earlier notes ring briefly under the new one, then fade.
+                for (const n of this.notes) release(ctx, n, 0.5);
+                this.notes = this.notes.filter((n) => n.end > now);
+                this.notes.push(strike(ctx, v.tone, inst, midi + (inst.octave || 0)));
+            }
+            this.hit = 1;
+            coachDone('play');
+        }
+        if (!pinch) {
+            v.sg.gain.setTargetAtTime(0, now, 0.06);
+            if (this.notes.length) { this.notes.forEach((n) => release(ctx, n, 0.6)); this.notes = []; }
+        }
     }
 
     update(dt, t, frame) {
         const st = this.stage;
-        const present = frame.hands.filter((h) => h.present && !h.captured);
-        // The rightmost hand on screen is the pitch hand.
+        const inst = INST[ui.get().thereminInst] || INSTRUMENTS[0];
+        const present = frame.hands.filter((h) => h.present);
         const right = present.length ? present.reduce((a, b) => (b.x > a.x ? b : a)) : null;
         const left = present.length === 2 ? present.find((h) => h !== right) : null;
-        const snapOn = ui.get().thereminSnap;
 
-        let gate = 0;
-        if (right) {
-            const raw = LOW + (1 - clamp(right.y, 0, 1)) * (HIGH - LOW);
-            const target = snapOn ? snap(raw) : raw;
-            this.target = target;
-            this.midi += (target - this.midi) * damp(snapOn ? 18 : 30, dt);
-            gate = right.pinch ? 1 : right.pinchStrength > 0.5 ? (right.pinchStrength - 0.5) * 0.6 : 0;
-            if (right.pinch) coachDone('play');
-        }
-        let vol = 0.7;
-        let waveIdx = 2;
+        let vol = 0.75;
         if (left) {
             vol = clamp(1.1 - left.y * 1.2, 0, 1);
-            waveIdx = clamp(left.fingers, 0, 5);
             if (Math.abs(left.y - 0.5) > 0.2) coachDone('volume');
         }
-        const level = gate * vol;
-        this.level += (level - this.level) * damp(20, dt);
+        const deg = clamp(midiToDeg(this.midi), 0, N_DEG - 1);
+        this.disp += (deg - this.disp) * damp(18, dt);
 
+        let held = 0;
         if (this.v) {
-            const ct = audio.ctx.currentTime, v = this.v, hz = midiToHz(this.midi);
-            v.o1.frequency.setTargetAtTime(hz, ct, 0.012);
-            v.o2.frequency.setTargetAtTime(hz * (waveIdx === 5 ? 1.5 : 1), ct, 0.012);
-            v.o1.type = WAVES[waveIdx];
-            v.o2.type = WAVES[waveIdx];
-            v.g.gain.setTargetAtTime(level * 0.25, ct, 0.03);
-            v.lfoG.gain.setTargetAtTime(right && right.fingers >= 4 ? hz * 0.012 : hz * 0.003, ct, 0.2);
-            v.f.frequency.setTargetAtTime(400 + clamp((right?.z ?? 0) + 0.5, 0, 1.5) * 4000 + (right?.x ?? 0.5) * 1500, ct, 0.05);
+            const ct = audio.ctx.currentTime, v = this.v;
+            if (inst.kind === 'hold') {
+                held = this.playing && !this.onUI ? 1 : 0;
+                v.o1.type = inst.waves[0];
+                v.o2.type = inst.waves[1];
+                v.o2.detune.value = inst.detune;
+                v.f.frequency.setTargetAtTime(inst.cutoff, ct, 0.05);
+                const hz = midiToHz(this.midi + (inst.octave || 0));
+                v.lfoG.gain.setTargetAtTime(hz * inst.vibrato * (right && right.fingers >= 4 ? 2.5 : 1), ct, 0.2);
+            } else {
+                v.sg.gain.setTargetAtTime(0, ct, 0.03);
+            }
+            v.out.gain.setTargetAtTime(vol * 0.3, ct, 0.05);
+            v.tone.frequency.setTargetAtTime(1800 + clamp((right?.z ?? 0) + 0.5, 0, 1.5) * 5000, ct, 0.05);
             if (right) audio.place(v.pan, st.pointAtZ(right.x, right.y, -0.5, this._v));
         }
+        this.hit *= Math.exp(-dt * 3);
+        const level = Math.max(held, this.hit) * vol;
+        this.level += (level - this.level) * damp(20, dt);
 
         // Visuals
-        this.hue = ((this.midi - LOW) / (HIGH - LOW)) * 0.75 + 0.5;
+        this.hue = (this.disp / (N_DEG - 1)) * 0.75 + 0.5;
         const col = new THREE.Color().setHSL(this.hue % 1, 0.7, 0.62);
-        this.marker.position.y = this.midiToY(this.midi);
+        this.marker.position.y = this.degToY(this.disp);
         this.marker.material.color.copy(col).multiplyScalar(1 + this.level * 0.6);
         this.marker.scale.setScalar(1 + this.level * 0.8);
 
@@ -197,7 +279,9 @@ export class ThereminDemo {
         if (this.bars.instanceColor) this.bars.instanceColor.needsUpdate = true;
 
         st.setRoomTint(col, 0.8 + this.level * 0.8);
-        const name = right ? noteName(this.target ?? this.midi) : null;
+        // Show the key under your hand; in a song, show the song note you just played.
+        const shown = this.song ? (this.hit > 0.05 || this.playing ? this.midi : null) : right ? degToMidi(this.deg ?? 4) : null;
+        const name = shown === null ? null : noteName(shown);
         if (ui.get().thereminNote !== name) ui.set({ thereminNote: name });
     }
 
@@ -207,6 +291,7 @@ export class ThereminDemo {
 
     dispose() {
         window.removeEventListener('keydown', this.onKey);
+        this.offInput();
         this.waveGeo?.dispose();
         this.waveMat?.dispose();
         this.waveHaloMat?.dispose();
@@ -214,7 +299,8 @@ export class ThereminDemo {
         this.root.traverse((o) => { if (o.isCSS2DObject) o.element.remove(); });
         if (this.v) {
             const ct = audio.ctx.currentTime;
-            this.v.g.gain.setTargetAtTime(0, ct, 0.05);
+            this.notes.forEach((n) => release(audio.ctx, n, 0.2));
+            this.v.out.gain.setTargetAtTime(0, ct, 0.05);
             [this.v.o1, this.v.o2].forEach((o) => o.stop(ct + 0.4));
         }
         ui.set({ thereminNote: null });

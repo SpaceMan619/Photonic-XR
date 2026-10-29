@@ -7,6 +7,7 @@ import { audio } from './engine/audio';
 import { GalaxyDemo } from './demos/galaxy';
 import { DrawDemo } from './demos/draw';
 import { ThereminDemo } from './demos/theremin';
+import { ChoirDemo } from './demos/choir';
 import { SplatsDemo } from './demos/splats';
 import StartScreen from './ui/StartScreen';
 import Menu from './ui/Menu';
@@ -17,6 +18,7 @@ const DEMOS = {
     galaxy: GalaxyDemo,
     draw: DrawDemo,
     theremin: ThereminDemo,
+    choir: ChoirDemo,
     splats: SplatsDemo,
 };
 
