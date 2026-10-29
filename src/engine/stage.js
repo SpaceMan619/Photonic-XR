@@ -27,7 +27,9 @@ export class Stage {
         this.cursorTint = [null, null];
 
         // Direct render, no post-processing: a bloom + MSAA composer cost ~20 fps on the Air for a glow the light theme barely shows.
-        const r = (this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }));
+        // No MSAA either: it multiplies the cost of every blended splat (Splat Worlds ran 12 fps with it, 60 without),
+        // and at retina pixel ratios the thin room lines barely show the difference.
+        const r = (this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' }));
         // Pixel ratio cap: the biggest single lever for keeping a fanless laptop cool.
         r.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         r.setClearColor(THEME.bg, 1);

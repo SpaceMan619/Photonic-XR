@@ -7,6 +7,7 @@ import { audio } from './engine/audio';
 import { GalaxyDemo } from './demos/galaxy';
 import { DrawDemo } from './demos/draw';
 import { ThereminDemo } from './demos/theremin';
+import { SplatsDemo } from './demos/splats';
 import StartScreen from './ui/StartScreen';
 import Menu from './ui/Menu';
 import Hud from './ui/Hud';
@@ -16,6 +17,7 @@ const DEMOS = {
     galaxy: GalaxyDemo,
     draw: DrawDemo,
     theremin: ThereminDemo,
+    splats: SplatsDemo,
 };
 
 // Tracker + stage live outside React: they run every frame and must never re-render.

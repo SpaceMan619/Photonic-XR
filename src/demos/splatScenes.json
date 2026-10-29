@@ -1,0 +1,86 @@
+{
+  "_about": "Splat Worlds scene list. `file` is looked up in public/splats/ first (run `npm run splats`), then `url`. kind: object = turn it in your hands, world = step inside. Optional: ext (full-precision positions, for captures far from the origin), lod (false skips Spark's LoD build), flip (default true, for OpenCV-style y-down captures), size (fitted size in stage units), focus [x,y,z] (offset of the turning point from the content centre), yaw, pitch. Extra local splats can be listed in public/local/splats/manifest.json with the same fields. Left out: snow-street.spz (positions beyond half-float range plus junk splats at ±131072; Spark's LoD build never finishes, and without LoD its 982k splats run ~30 fps).",
+  "scenes": [
+    {
+      "id": "butterfly",
+      "name": "Butterfly",
+      "kind": "object",
+      "file": "butterfly.spz",
+      "url": "https://sparkjs.dev/assets/splats/butterfly.spz",
+      "line": "a wing you can almost touch"
+    },
+    {
+      "id": "penguin",
+      "name": "Penguin",
+      "kind": "object",
+      "file": "penguin.spz",
+      "url": "https://sparkjs.dev/assets/splats/penguin.spz",
+      "line": "a small friend on the glass"
+    },
+    {
+      "id": "cat",
+      "name": "Cat",
+      "kind": "object",
+      "file": "cat.spz",
+      "url": "https://sparkjs.dev/assets/splats/cat.spz",
+      "line": "every whisker is a little light"
+    },
+    {
+      "id": "robot-head",
+      "name": "Robot Head",
+      "kind": "object",
+      "file": "robot-head.spz",
+      "url": "https://sparkjs.dev/assets/splats/robot-head.spz",
+      "line": "turn it and look it in the eye"
+    },
+    {
+      "id": "dessert",
+      "name": "Dessert",
+      "kind": "object",
+      "file": "dessert.spz",
+      "url": "https://sparkjs.dev/assets/splats/dessert.spz",
+      "line": "plated, glossy, unreal"
+    },
+    {
+      "id": "burger",
+      "name": "Burger",
+      "kind": "object",
+      "file": "burger-from-amboy.spz",
+      "url": "https://sparkjs.dev/assets/splats/food/burger-from-amboy.spz",
+      "line": "from Amboy, captured in light"
+    },
+    {
+      "id": "painted-bedroom",
+      "name": "Painted Bedroom",
+      "kind": "world",
+      "file": "painted-bedroom.spz",
+      "url": "https://storage.googleapis.com/forge-dev-public/painted_bedroom.spz",
+      "line": "step into a painting"
+    },
+    {
+      "id": "fireplace",
+      "name": "Fireplace",
+      "kind": "world",
+      "file": "fireplace.spz",
+      "url": "https://sparkjs.dev/assets/splats/fireplace.spz",
+      "line": "a warm room behind the glass"
+    },
+    {
+      "id": "distant-igloo",
+      "name": "Distant Igloo",
+      "kind": "world",
+      "file": "distant-igloo.spz",
+      "ext": true,
+      "url": "https://sparkjs.dev/assets/splats/distant-igloo.spz",
+      "line": "far out on the ice"
+    },
+    {
+      "id": "valley",
+      "name": "Valley",
+      "kind": "world",
+      "file": "valley.spz",
+      "url": "https://sparkjs.dev/assets/splats/valley.spz",
+      "line": "a whole valley through a window"
+    }
+  ]
+}

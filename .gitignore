@@ -6,3 +6,6 @@ dist
 # Personal photos + generated depth maps (local build only, never push)
 public/local/
 .claude/
+
+# Splat Worlds scenes, downloaded by `npm run splats`
+public/splats/
