@@ -73,8 +73,9 @@ body.mouse-mode, body.mouse-mode * { cursor: none !important; }
 .brand { font: 300 26px var(--display); letter-spacing: -.01em; color: var(--ink); }
 .menu-title { font: 300 clamp(36px, 5vw, 58px) var(--display); letter-spacing: -.02em; margin: 0 0 6px; color: var(--ink); }
 .menu-sub { font-family: var(--display); font-style: italic; color: var(--ink-soft); margin: 0 0 36px; text-align: center; font-size: 17px; }
-.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 290px)); gap: 22px; }
-@media (max-width: 900px) { .cards { grid-template-columns: 1fr; } }
+.cards { display: grid; grid-template-columns: repeat(4, minmax(0, 280px)); gap: 20px; }
+@media (max-width: 1240px) { .cards { grid-template-columns: repeat(2, minmax(0, 330px)); gap: 16px; } }
+@media (max-width: 640px) { .cards { grid-template-columns: 1fr; } }
 .card {
   text-align: left; padding: 26px 24px 22px; border-radius: 28px; color: var(--ink); cursor: pointer;
   transition: transform .5s var(--ease-dream), box-shadow .4s, background .4s;
@@ -166,3 +167,52 @@ body.mouse-mode, body.mouse-mode * { cursor: none !important; }
 @keyframes spin3d { from { transform: rotateX(65deg) rotate(0); } to { transform: rotateX(65deg) rotate(360deg); } }
 @keyframes eq { 50% { transform: scaleY(.5); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; } }
+
+/* ── Splat Worlds ── */
+.glyph.splats span { border-radius: 50%; }
+.glyph.splats span:nth-child(1) { inset: 8px; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.95), rgba(168,201,255,.55) 45%, rgba(127,168,255,0) 72%); animation: breathe 4s var(--ease-dream) infinite; }
+.glyph.splats span:nth-child(2) { width: 22px; height: 22px; left: 30px; top: 10px; background: radial-gradient(circle at 35% 35%, #fff, rgba(165,140,255,.7) 50%, rgba(165,140,255,0) 72%); animation: breathe 5s var(--ease-dream) infinite -1.5s; }
+.glyph.splats span:nth-child(3) { width: 18px; height: 18px; left: 12px; top: 34px; background: radial-gradient(circle at 35% 35%, #fff, rgba(215,106,134,.6) 50%, rgba(215,106,134,0) 72%); animation: breathe 4.5s var(--ease-dream) infinite -3s; }
+
+.hud.splats .toast { bottom: 150px; }
+.splat-note { animation: rise .9s var(--ease-dream) both; }
+.splat-note span { font: 500 12px var(--body); font-style: normal; color: var(--sky); }
+
+.splat-carousel { position: absolute; left: 50%; bottom: 74px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 40px); }
+.splat-carousel .arrow { flex: none; width: 42px; height: 42px; padding: 0; font: 400 24px/1 var(--display); display: grid; place-items: center; }
+.splat-track { display: flex; gap: 6px; padding: 5px; border-radius: 999px; overflow-x: auto; scrollbar-width: none;
+  background: linear-gradient(160deg, rgba(255,255,255,.82), rgba(240,246,255,.7)); border: 1px solid var(--glass-edge);
+  box-shadow: 0 8px 32px rgba(90,130,210,.18), inset 0 1px 1px rgba(255,255,255,.6);
+  -webkit-mask: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent); mask: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent); }
+.splat-track::-webkit-scrollbar { display: none; }
+.splat-pill { flex: none; display: inline-flex; align-items: center; gap: 7px; font: 500 13.5px var(--body); color: var(--ink-soft); background: transparent; border: none; border-radius: 999px; padding: 8px 14px; cursor: pointer; white-space: nowrap; transition: all .35s var(--ease-dream); }
+.splat-pill:first-child { margin-left: 10px; }
+.splat-pill:last-child { margin-right: 10px; }
+.splat-pill:hover, .splat-pill.hand-hover { color: var(--ink); background: rgba(255,255,255,.65); }
+.splat-pill.on { background: var(--sky); color: #fff; box-shadow: 0 4px 14px rgba(127,168,255,.5); }
+.splat-pill .kind { width: 8px; height: 8px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff, var(--sky)); box-shadow: 0 0 0 1.5px rgba(127,168,255,.35); }
+.splat-pill.world .kind { border-radius: 2px 2px 50% 50%; background: radial-gradient(circle at 35% 35%, #fff, var(--lilac)); box-shadow: 0 0 0 1.5px rgba(165,140,255,.35); }
+.splat-pill.on .kind { background: #fff; box-shadow: none; }
+
+.splat-loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -40%) scale(.96); opacity: 0; transition: opacity .6s var(--ease-dream), transform .8s var(--ease-dream); display: flex; flex-direction: column; align-items: center; gap: 18px; pointer-events: none; }
+.splat-loading.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.pearl { position: relative; width: 92px; height: 92px; }
+.pearl span:nth-child(1) { position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(var(--sky) calc(var(--p) * 360deg), rgba(127,168,255,.16) 0);
+  -webkit-mask: radial-gradient(circle, transparent 62%, #000 64%); mask: radial-gradient(circle, transparent 62%, #000 64%); transition: background .3s; }
+.pearl span:nth-child(2) { position: absolute; inset: 20px; border-radius: 50%; background: radial-gradient(circle at 34% 30%, #fff, var(--glow) 50%, var(--lilac)); box-shadow: 0 10px 34px rgba(127,168,255,.55); animation: breathe 2.4s var(--ease-dream) infinite; }
+.splat-loading-text { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 24px; border-radius: 24px;
+  background: linear-gradient(160deg, rgba(255,255,255,.82), rgba(240,246,255,.7)); border: 1px solid var(--glass-edge); box-shadow: 0 8px 32px rgba(90,130,210,.18); }
+.splat-loading-text i { font: italic 14px var(--display); color: var(--sky); }
+.splat-loading-text b { font: 400 22px var(--display); color: var(--ink); letter-spacing: -.01em; }
+.splat-loading-text span { font: 500 12px var(--body); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+@keyframes breathe { 50% { transform: scale(.88); opacity: .85; } }
+/* The carousel sits right above the legend, so the legend must stay one row. */
+.hud.splats .legend { flex-wrap: nowrap; }
+.hud.splats .legend span { white-space: nowrap; }
+@media (max-width: 1100px) { .hud.splats .legend span:nth-child(n+4) { display: none; } }
+@media (max-width: 640px) { .hud.splats .legend { display: none; } .splat-carousel { bottom: 20px; } }
+/* Portal mode: the stage goes black, so the few HUD words drawn straight on it turn pale. */
+.hud.portal .hud-title > span, .hud.portal .set-note { color: #e8eeff; }
+.hud.portal .splat-note span { color: var(--glow); }

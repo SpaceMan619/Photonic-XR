@@ -23,6 +23,13 @@ const ITEMS = [
         tags: ['Synth', 'Spatial audio'],
         glyph: 'theremin',
     },
+    {
+        id: 'splats',
+        name: 'Splat Worlds',
+        line: 'Real places and things captured as millions of soft lights. Turn them, then step inside.',
+        tags: ['Gaussian splats', 'Walk-in'],
+        glyph: 'splats',
+    },
 ];
 
 export default function Menu({ onOpen }) {

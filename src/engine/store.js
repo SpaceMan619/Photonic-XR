@@ -21,7 +21,7 @@ export function createStore(initial) {
 
 export const ui = createStore({
     screen: 'start',        // start | menu | demo
-    demo: null,             // galaxy | draw | theremin
+    demo: null,             // galaxy | draw | theremin | splats
     input: 'none',          // none | loading | camera | mouse | error
     inputError: null,
     galaxyMode: 'galaxy',   // galaxy | sort
@@ -39,6 +39,12 @@ export const ui = createStore({
     photoSet: null,         // 'local' | 'demo'
     categories: [],
     counts: {},
+    splatList: [],          // [{ id, name, kind, line, local }]
+    splatIndex: 0,
+    splatStatus: 'idle',    // idle | loading | ready | error
+    splatProgress: 0,       // 0..100
+    splatCount: 0,          // splats in the shown scene
+    splatPortal: false,     // black void + lit frame, so things seem to come out of the screen
 });
 
 export const useUI = (selector) =>
