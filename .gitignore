@@ -2,3 +2,7 @@ node_modules
 .DS_Store
 dist
 .env
+
+# Personal photos + generated depth maps (local build only, never push)
+public/local/
+.claude/

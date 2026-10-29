@@ -1,0 +1,302 @@
+{
+ "categories": [
+  "Bruzo",
+  "Jimmy"
+ ],
+ "photos": [
+  {
+   "id": "p00",
+   "src": "/demo/photos/p00.jpg",
+   "depth": "/demo/depth/p00.png",
+   "aspect": 0.75,
+   "category": "Jimmy",
+   "confidence": 0.5,
+   "color": "#66615a",
+   "galaxy": [
+    -0.019,
+    0.4551,
+    0.1457
+   ]
+  },
+  {
+   "id": "p01",
+   "src": "/demo/photos/p01.jpg",
+   "depth": "/demo/depth/p01.png",
+   "aspect": 0.75,
+   "category": "Bruzo",
+   "confidence": 0.502,
+   "color": "#736149",
+   "galaxy": [
+    0.1784,
+    0.7205,
+    -0.0227
+   ]
+  },
+  {
+   "id": "p02",
+   "src": "/demo/photos/p02.jpg",
+   "depth": "/demo/depth/p02.png",
+   "aspect": 0.75,
+   "category": "Bruzo",
+   "confidence": 0.508,
+   "color": "#575350",
+   "galaxy": [
+    -0.1034,
+    0.2253,
+    1.0
+   ]
+  },
+  {
+   "id": "p03",
+   "src": "/demo/photos/p03.jpg",
+   "depth": "/demo/depth/p03.png",
+   "aspect": 0.75,
+   "category": "Bruzo",
+   "confidence": 0.504,
+   "color": "#8e6c56",
+   "galaxy": [
+    0.2117,
+    0.5482,
+    0.0162
+   ]
+  },
+  {
+   "id": "p04",
+   "src": "/demo/photos/p04.jpg",
+   "depth": "/demo/depth/p04.png",
+   "aspect": 0.75,
+   "category": "Bruzo",
+   "confidence": 0.5,
+   "color": "#8e7258",
+   "galaxy": [
+    0.1595,
+    0.606,
+    -0.082
+   ]
+  },
+  {
+   "id": "p05",
+   "src": "/demo/photos/p05.jpg",
+   "depth": "/demo/depth/p05.png",
+   "aspect": 0.5625,
+   "category": "Bruzo",
+   "confidence": 0.508,
+   "color": "#785b50",
+   "galaxy": [
+    0.1205,
+    0.5988,
+    -0.2262
+   ]
+  },
+  {
+   "id": "p06",
+   "src": "/demo/photos/p06.jpg",
+   "depth": "/demo/depth/p06.png",
+   "aspect": 0.75,
+   "category": "Bruzo",
+   "confidence": 0.506,
+   "color": "#8e7766",
+   "galaxy": [
+    0.0508,
+    0.8528,
+    -0.1159
+   ]
+  },
+  {
+   "id": "p07",
+   "src": "/demo/photos/p07.jpg",
+   "depth": "/demo/depth/p07.png",
+   "aspect": 0.75,
+   "category": "Bruzo",
+   "confidence": 0.507,
+   "color": "#7b6d69",
+   "galaxy": [
+    0.0306,
+    0.8619,
+    -0.272
+   ]
+  },
+  {
+   "id": "p08",
+   "src": "/demo/photos/p08.jpg",
+   "depth": "/demo/depth/p08.png",
+   "aspect": 0.5645,
+   "category": "Bruzo",
+   "confidence": 0.506,
+   "color": "#705f51",
+   "galaxy": [
+    0.1535,
+    0.68,
+    0.0264
+   ]
+  },
+  {
+   "id": "p09",
+   "src": "/demo/photos/p09.jpg",
+   "depth": "/demo/depth/p09.png",
+   "aspect": 0.75,
+   "category": "Jimmy",
+   "confidence": 0.51,
+   "color": "#8a6f5b",
+   "galaxy": [
+    0.1892,
+    -0.5026,
+    -0.1499
+   ]
+  },
+  {
+   "id": "p10",
+   "src": "/demo/photos/p10.jpg",
+   "depth": "/demo/depth/p10.png",
+   "aspect": 0.75,
+   "category": "Jimmy",
+   "confidence": 0.511,
+   "color": "#be7f50",
+   "galaxy": [
+    0.2599,
+    -0.6737,
+    -0.322
+   ]
+  },
+  {
+   "id": "p11",
+   "src": "/demo/photos/p11.jpg",
+   "depth": "/demo/depth/p11.png",
+   "aspect": 0.75,
+   "category": "Jimmy",
+   "confidence": 0.515,
+   "color": "#af7e5d",
+   "galaxy": [
+    0.1788,
+    -0.6782,
+    0.0401
+   ]
+  },
+  {
+   "id": "p12",
+   "src": "/demo/photos/p12.jpg",
+   "depth": "/demo/depth/p12.png",
+   "aspect": 0.75,
+   "category": "Jimmy",
+   "confidence": 0.51,
+   "color": "#947b63",
+   "galaxy": [
+    0.0694,
+    -0.5259,
+    -0.0533
+   ]
+  },
+  {
+   "id": "p13",
+   "src": "/demo/photos/p13.jpg",
+   "depth": "/demo/depth/p13.png",
+   "aspect": 0.5625,
+   "category": "Jimmy",
+   "confidence": 0.511,
+   "color": "#897669",
+   "galaxy": [
+    0.1476,
+    -0.1911,
+    0.0618
+   ]
+  },
+  {
+   "id": "p14",
+   "src": "/demo/photos/p14.jpg",
+   "depth": "/demo/depth/p14.png",
+   "aspect": 0.75,
+   "category": "Jimmy",
+   "confidence": 0.509,
+   "color": "#bc7f5b",
+   "galaxy": [
+    -0.0829,
+    -1.0,
+    0.0801
+   ]
+  },
+  {
+   "id": "p15",
+   "src": "/demo/photos/p15.jpg",
+   "depth": "/demo/depth/p15.png",
+   "aspect": 0.75,
+   "category": "Jimmy",
+   "confidence": 0.508,
+   "color": "#b68963",
+   "galaxy": [
+    0.0859,
+    -0.6112,
+    -0.0686
+   ]
+  },
+  {
+   "id": "p16",
+   "src": "/demo/photos/p16.jpg",
+   "depth": "/demo/depth/p16.png",
+   "aspect": 0.75,
+   "category": "Jimmy",
+   "confidence": 0.513,
+   "color": "#a87f54",
+   "galaxy": [
+    0.1632,
+    -0.6151,
+    0.0118
+   ]
+  },
+  {
+   "id": "p17",
+   "src": "/demo/photos/p17.jpg",
+   "depth": "/demo/depth/p17.png",
+   "aspect": 0.75,
+   "category": "Jimmy",
+   "confidence": 0.511,
+   "color": "#947a6f",
+   "galaxy": [
+    0.0021,
+    -0.1601,
+    0.2223
+   ]
+  },
+  {
+   "id": "p18",
+   "src": "/demo/photos/p18.jpg",
+   "depth": "/demo/depth/p18.png",
+   "aspect": 0.75,
+   "category": "Jimmy",
+   "confidence": 0.512,
+   "color": "#817780",
+   "galaxy": [
+    0.1504,
+    -0.5371,
+    -0.0024
+   ]
+  },
+  {
+   "id": "p19",
+   "src": "/demo/photos/p19.jpg",
+   "depth": "/demo/depth/p19.png",
+   "aspect": 0.5898,
+   "category": "Jimmy",
+   "confidence": 0.513,
+   "color": "#beaf83",
+   "galaxy": [
+    -0.9462,
+    -0.0398,
+    -0.4151
+   ]
+  },
+  {
+   "id": "p20",
+   "src": "/demo/photos/p20.jpg",
+   "depth": "/demo/depth/p20.png",
+   "aspect": 1.5009,
+   "category": "Jimmy",
+   "confidence": 0.506,
+   "color": "#987c70",
+   "galaxy": [
+    -1.0,
+    -0.0139,
+    0.1256
+   ]
+  }
+ ]
+}
