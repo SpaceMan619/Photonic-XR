@@ -3,6 +3,7 @@ import { ui, toast, coachDone } from '../engine/store';
 import { audio } from '../engine/audio';
 import { damp, clamp } from '../engine/filters';
 import { THEME, color } from '../engine/theme';
+import { EYE_Z } from '../engine/stage';
 import BUILT_IN from './splatScenes.json';
 
 // What holds 60 fps on the Air, measured per kind (Chrome, 1470x850 @2x). Splats are pure blended fill:
@@ -12,13 +13,21 @@ const PERF = {
     object: { ratio: 1, budget: 900_000, px: 160 },
     world: { ratio: 0.7, budget: 350_000, px: 80 },
 };
+// Photo splats are pixel-sized and seen from their own camera: thinning, a low pixel ratio or a size cap
+// all punch holes in faces, and from that viewpoint they are cheap anyway. So: everything, full resolution.
+PERF.photo = { ratio: 1, budget: 2_000_000, px: 512 };
 const PORTAL_INSET = 0.07;       // portal frame inset, as a share of screen height
 
 const OBJECT_Z = -1.25;          // objects rest just behind the glass
 const OBJECT_SIZE = 1.45;        // fitted height/width, in half-screen-heights
 const WORLD_Z = -2.4;            // a world starts as a diorama deep behind the glass...
 const WORLD_SIZE = 5.5;          // ...wider than the window, so it reads as a place
-const APPROACH = { object: [-1.6, 1.15], world: [-1.6, 1.9] }; // how far each can come toward you
+const APPROACH = { object: [-1.6, 1.15], world: [-1.6, 1.9], photo: [-0.5, 0.12] }; // how far each can come toward you
+// Your photos as splats (Apple SHARP): one camera, one viewpoint. You stand where the camera stood and the
+// subject sits just behind the glass; looking around stays gentle, or the empty space behind people shows.
+const PHOTO_SUBJECT_Z = -0.35;   // where the near subject lands, in stage units
+const PHOTO_PARALLAX = 0.45;     // share of your head movement the photo answers to
+const PHOTO_TURN = 0.22;         // max yaw / pitch, radians
 const LOAD_TIMEOUT = 25_000;
 const REVEAL_TIME = 1.7;
 const VANISH_TIME = 0.8;
@@ -76,6 +85,18 @@ export class SplatsDemo {
                 this.scenes.push({ kind: 'object', ...s, id: `local-${s.id || s.file}`, sources: [`/local/splats/${s.file}`], local: true });
             }
         } catch { /* no local splats */ }
+        // "Your memories": photos turned into splats by scripts/photo_splats.py (Apple SHARP), local only.
+        try {
+            const r = await fetch('/local/splats.json');
+            const j = JSON.parse(await r.text());
+            for (const s of j.splats || []) {
+                this.scenes.push({
+                    id: `mem-${s.id}`, name: s.title || s.id, kind: s.kind === 'photo' ? 'photo' : 'object',
+                    file: s.src.split('/').pop(), sources: [s.src], rotation: s.rotation,
+                    line: 'one of your memories · local only', local: true, lod: false,
+                });
+            }
+        } catch { /* no memories yet */ }
         if (this.disposed) return;
 
         this.unsub = ui.subscribe((s) => {
@@ -195,13 +216,14 @@ export class SplatsDemo {
         if (token !== this.token || this.disposed) { mesh.dispose(); return; }
         this.place(scene, mesh);
         ui.set({ splatStatus: 'ready', splatProgress: 100, splatCount: splatSource(mesh)?.numSplats || 0 });
-        audio.chime(null, scene.kind === 'world' ? 349.23 : 392);
+        audio.chime(null, scene.kind === 'object' ? 392 : 349.23);
     }
 
     place(scene, mesh) {
-        const kind = scene.kind === 'world' ? 'world' : 'object';
-        const { center, extent, radius } = measure(mesh);
-        const flip = scene.flip === false ? new THREE.Quaternion() : FLIP;
+        const kind = scene.kind === 'world' || scene.kind === 'photo' ? scene.kind : 'object';
+        const { center, extent, radius, near } = measure(mesh);
+        const flip = scene.rotation ? new THREE.Quaternion().setFromEuler(new THREE.Euler(...scene.rotation))
+            : scene.flip === false ? new THREE.Quaternion() : FLIP;
         mesh.quaternion.copy(flip);
         const inner = new THREE.Group();
         const root = new THREE.Group();
@@ -212,8 +234,15 @@ export class SplatsDemo {
         // "home" is the resting view: which scene point sits on the pivot, how big, which way round.
         // Both kinds are framed by their actual content, not their file origin (captures put that anywhere).
         const home = makeView();
-        home.focus.copy(center).applyQuaternion(flip);
-        home.base = (scene.size || (kind === 'object' ? OBJECT_SIZE : WORLD_SIZE)) / Math.max(extent, 1e-3);
+        if (kind === 'photo') {
+            // The capture camera sits on your eye, so from home the splats line up exactly with the photo.
+            // Scaling about the eye never changes that picture, only how deep it feels: put the subject behind the glass.
+            home.focus.set(0, 0, 0);
+            home.base = (EYE_Z - PHOTO_SUBJECT_Z) / Math.max(near, 1e-3);
+        } else {
+            home.focus.copy(center).applyQuaternion(flip);
+            home.base = (scene.size || (kind === 'object' ? OBJECT_SIZE : WORLD_SIZE)) / Math.max(extent, 1e-3);
+        }
         if (scene.focus) home.focus.add(this._v.fromArray(scene.focus));
         home.yaw = scene.yaw || 0;
         home.pitch = scene.pitch || 0;
@@ -228,15 +257,17 @@ export class SplatsDemo {
             this.view.yaw -= 0.9;
             this.view.zoom = 0.55;
             this.view.approach = -0.8;
-        } else {
+        } else if (kind === 'world') {
             this.view.approach = -1.4; // start a few steps back, then drift in
             this.view.yaw -= 0.35;
+        } else {
+            this.view.approach = -0.5; // a memory surfacing: drift forward into the photo's own viewpoint
         }
         this.spin = 0;
         this.drag = [null, null];
         this.two = null;
         this.lastInput = this.stage.frame?.t ?? 0;
-        this.stage.setRoomTint(kind === 'world' ? THEME.lilac : THEME.sky, kind === 'world' ? 0.12 : 0.9);
+        this.stage.setRoomTint(kind === 'object' ? THEME.sky : THEME.lilac, kind === 'object' ? 0.9 : 0.12);
         this.applyPerf(kind);
         this.apply(this.cur, this.view, 0);
     }
@@ -326,8 +357,10 @@ export class SplatsDemo {
             if (h.pinch && !both && !this.drag[1 - i]) {
                 if (!this.drag[i]) this.drag[i] = { x: h.x, y: h.y, yaw: this.goal.yaw, pitch: this.goal.pitch };
                 const g = this.drag[i];
+                const lim = isObj ? 1.2 : c.kind === 'photo' ? PHOTO_TURN : 0.55;
                 this.goal.yaw = g.yaw + (h.x - g.x) * (isObj ? 4.2 : 2.2);
-                this.goal.pitch = clamp(g.pitch + (h.y - g.y) * (isObj ? 3 : 1.6), isObj ? -1.2 : -0.55, isObj ? 1.2 : 0.55);
+                if (c.kind === 'photo') this.goal.yaw = clamp(this.goal.yaw, -PHOTO_TURN, PHOTO_TURN);
+                this.goal.pitch = clamp(g.pitch + (h.y - g.y) * (isObj ? 3 : 1.6), -lim, lim);
                 this.spin = 0;
                 if (Math.abs(h.x - g.x) + Math.abs(h.y - g.y) > 0.08) coachDone('orbit');
                 active = true;
@@ -347,6 +380,7 @@ export class SplatsDemo {
             // A quick push toward the screen: bring the object up to the glass, or take a step in.
             if (h.pushed) {
                 if (isObj) this.goal.approach = this.goal.approach > 0.6 ? 0 : 1.05;
+                else if (c.kind === 'photo') this.goal.approach = this.goal.approach > 0.06 ? 0 : 0.12;
                 else this.goal.approach = this.goal.approach > 1.5 ? 0 : clampApproach(c, this.goal.approach + 0.9);
                 audio.whoosh(new THREE.Vector3(0, 0, 0), 1.2);
                 coachDone('fly');
@@ -370,12 +404,12 @@ export class SplatsDemo {
 
         const k = damp(this.cur.state === 'in' ? 3.2 : 9, dt);
         lerpView(this.view, this.goal, k);
-        this.apply(c, this.view, isObj ? 0 : Math.sin(t * 0.17) * 0.09 * this.idle);
+        this.apply(c, this.view, isObj ? 0 : Math.sin(t * 0.17) * (c.kind === 'photo' ? 0.03 : 0.09) * this.idle);
     }
 
     // Toward you: an object floats up to the glass, a world comes through it until you're standing inside.
     fly(amount) {
-        this.goal.approach = clampApproach(this.cur, this.goal.approach + amount * (this.cur.kind === 'world' ? 1.6 : 1));
+        this.goal.approach = clampApproach(this.cur, this.goal.approach + amount * (this.cur.kind === 'world' ? 1.6 : this.cur.kind === 'photo' ? 0.6 : 1));
         if (Math.abs(amount) > 0.01) coachDone('fly');
     }
 
@@ -386,7 +420,11 @@ export class SplatsDemo {
     }
 
     apply(c, v, sway) {
-        c.root.position.set(0, 0.03, (c.kind === 'object' ? OBJECT_Z : WORLD_Z) + v.approach);
+        if (c.kind === 'photo') {
+            // Pivot on your eye, and follow part of your head movement so the parallax stays believable.
+            const e = this.stage.eye, k = 1 - PHOTO_PARALLAX;
+            c.root.position.set(e.x * k, e.y * k, EYE_Z + v.approach);
+        } else c.root.position.set(0, 0.03, (c.kind === 'object' ? OBJECT_Z : WORLD_Z) + v.approach);
         c.root.rotation.set(v.pitch, v.yaw + sway, v.roll, 'ZXY');
         const s = c.home.base * v.zoom;
         c.inner.scale.setScalar(s);
@@ -474,7 +512,7 @@ function measure(mesh) {
         const box = mesh.getBoundingBox(true);
         box.getCenter(center);
         const size = box.getSize(new THREE.Vector3());
-        return { center, extent: Math.max(size.x, size.y, size.z), radius: size.length() / 2 };
+        return { center, extent: Math.max(size.x, size.y, size.z), radius: size.length() / 2, near: 1 };
     }
     const S = Math.min(n, 5000);
     const axes = [[], [], []];
@@ -495,7 +533,10 @@ function measure(mesh) {
     });
     center.addVectors(lo, hi).multiplyScalar(0.5);
     const size = hi.sub(lo);
-    return { center, extent: Math.max(size.x, size.y, size.z), radius: size.length() / 2 };
+    // Depth of the near subject for photo splats: 10th percentile of positive z (the camera looks down +z).
+    const zs = axes[2].filter((z) => z > 0);
+    const near = zs.length ? zs[Math.floor(zs.length * 0.1)] : 1;
+    return { center, extent: Math.max(size.x, size.y, size.z), radius: size.length() / 2, near };
 }
 
 // Local copy first (npm run splats), then the web. Vite answers a missing file with its

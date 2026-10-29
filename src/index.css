@@ -192,6 +192,7 @@ body.mouse-mode, body.mouse-mode * { cursor: none !important; }
 .splat-pill.on { background: var(--sky); color: #fff; box-shadow: 0 4px 14px rgba(127,168,255,.5); }
 .splat-pill .kind { width: 8px; height: 8px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff, var(--sky)); box-shadow: 0 0 0 1.5px rgba(127,168,255,.35); }
 .splat-pill.world .kind { border-radius: 2px 2px 50% 50%; background: radial-gradient(circle at 35% 35%, #fff, var(--lilac)); box-shadow: 0 0 0 1.5px rgba(165,140,255,.35); }
+.splat-pill.photo .kind { border-radius: 2px; background: radial-gradient(circle at 35% 35%, #fff, var(--rose)); box-shadow: 0 0 0 1.5px rgba(215,106,134,.35); }
 .splat-pill.on .kind { background: #fff; box-shadow: none; }
 
 .splat-loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -40%) scale(.96); opacity: 0; transition: opacity .6s var(--ease-dream), transform .8s var(--ease-dream); display: flex; flex-direction: column; align-items: center; gap: 18px; pointer-events: none; }
